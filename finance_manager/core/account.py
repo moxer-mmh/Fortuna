@@ -41,7 +41,7 @@ class AccountManager:
 
     def display_accounts(self) -> None:
         for account in self.accounts:
-            print(f"{account.name} - Balance: ${account.balance:.2f}")
+            print(f"{account.name} - Balance: {account.balance:.2f} DA")
 
     def transfer(self, from_account_name: str, to_account_name: str, amount: float) -> None:
         from_account = self.get_account(from_account_name)
@@ -54,7 +54,7 @@ class AccountManager:
 
         from_account.withdraw(amount)
         to_account.deposit(amount)
-        print(f"Transferred ${amount:.2f} from {from_account_name} to {to_account_name}")
+        print(f"Transferred {amount:.2f} DA from {from_account_name} to {to_account_name}")
 
     def input_account(self) -> None:
         name = input("Enter account name: ")

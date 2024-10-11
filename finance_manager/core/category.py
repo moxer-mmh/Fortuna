@@ -8,7 +8,7 @@ class Category:
         self.transactions: List[Transaction] = []
 
     def __str__(self) -> str:
-        return f"{self.name} (Budget: ${self.budget:.2f})"
+        return f"{self.name} (Budget: {self.budget:.2f} DA)"
 
     def __repr__(self) -> str:
         return f"Category(name='{self.name}', budget={self.budget})"

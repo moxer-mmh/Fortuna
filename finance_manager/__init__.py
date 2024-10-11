@@ -1,5 +1,3 @@
-from .budget_tracker import BudgetTracker
-from .category import Category
-from .transaction import Transaction
+from .app import FinanceManager
 
-__all__ = ['BudgetTracker', 'Category', 'Transaction']
+__all__ = ["FinanceManager"]

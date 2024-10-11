@@ -9,11 +9,9 @@ class Expense:
         self.transaction = transaction
         self.category = category
         self.account = account
-        
-        # Add the transaction to the category
+
         self.category.add_transaction_to_category(self.transaction)
         
-        # Withdraw the amount from the account
         self.account.withdraw(self.transaction.amount)
 
     def __str__(self):
@@ -63,7 +61,7 @@ class ExpenseManager:
 
     def display_categories(self) -> None:
         for category in self.categories:
-            print(f"{category.name} (Budget: ${category.budget:.2f})")
+            print(f"{category.name} (Budget: {category.budget:.2f} DA)")
 
     def display_expenses(self, category_name: Optional[str] = None) -> None:
         filtered_expenses = self.expenses
