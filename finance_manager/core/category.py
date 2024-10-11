@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import List, Optional
+from typing import List
 from .transaction import Transaction
 
 class Category:
@@ -14,21 +13,20 @@ class Category:
     def __repr__(self) -> str:
         return f"Category(name='{self.name}', budget={self.budget})"
 
-    def add_transaction(self, transaction: Transaction) -> None:
+    def add_transaction_to_category(self, transaction: Transaction) -> None:
         if not isinstance(transaction, Transaction):
             raise ValueError("Transaction must be an instance of Transaction class")
         self.transactions.append(transaction)
 
-    def get_transactions(self) -> List[Transaction]:
+    def get_transactions_from_category(self) -> List[Transaction]:
         return self.transactions
 
-    def get_total_transactions(self) -> float:
-        return sum(t.amount for t in self.transactions)
-
-    def delete_transaction(self, transaction: Transaction) -> None:
+    def delete_transaction_from_category(self, transaction: Transaction) -> None:
         if transaction in self.transactions:
             self.transactions.remove(transaction)
         else:
             raise ValueError("Transaction not found in category")
 
+    def get_total_transactions_in_category(self) -> float:
+        return sum(t.amount for t in self.transactions)
 
