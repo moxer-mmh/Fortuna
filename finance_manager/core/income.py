@@ -5,28 +5,27 @@ from .category import Category
 from .account import Account
 
 
-class Expense:
+class Income:
     def __init__(self, transaction: Transaction, category: Category, account: Account):
         self.transaction = transaction
         self.category = category
         self.account = account
 
         self.category.add_transaction_to_category(self.transaction)
-
-        self.account.withdraw(self.transaction.amount)
+        self.account.deposit(self.transaction.amount)
 
     def __str__(self):
-        return f"Expense: {self.transaction} - Category: {self.category.name} - Account: {self.account.name}"
+        return f"Income: {self.transaction} - Category: {self.category.name} - Account: {self.account.name}"
 
     @classmethod
-    def add_expense(
+    def add_income(
         cls,
         date: datetime,
         amount: float,
         description: str,
         category: Category,
         account: Account,
-    ) -> "Expense":
+    ) -> "Income":
         transaction = Transaction(date, amount, description, account)
         return cls(transaction, category, account)
 
@@ -42,8 +41,8 @@ class Expense:
         if new_amount is not None:
             old_amount = self.transaction.amount
             self.transaction.amount = new_amount
-            self.account.deposit(old_amount)
-            self.account.withdraw(new_amount)
+            self.account.withdraw(old_amount)
+            self.account.deposit(new_amount)
         if new_description:
             self.transaction.description = new_description
         if new_category:
@@ -53,16 +52,16 @@ class Expense:
 
     def delete(self) -> None:
         self.category.delete_transaction_from_category(self.transaction)
-        self.account.deposit(self.transaction.amount)
+        self.account.withdraw(self.transaction.amount)
 
 
-class ExpenseManager:
+class IncomeManager:
     def __init__(self):
-        self.expenses: List[Expense] = []
+        self.incomes: List[Income] = []
         self.categories: List[Category] = []
 
-    def add_expense(self, expense: Expense) -> None:
-        self.expenses.append(expense)
+    def add_income(self, income: Income) -> None:
+        self.incomes.append(income)
 
     def add_category(self, name: str, budget: float) -> None:
         if self.get_category(name):
@@ -70,35 +69,33 @@ class ExpenseManager:
         new_category = Category(name, budget)
         self.categories.append(new_category)
 
-    def get_expense(self, transaction_id: str) -> Optional[Expense]:
+    def get_income(self, transaction_id: str) -> Optional[Income]:
         return next(
-            (exp for exp in self.expenses if exp.transaction.id == transaction_id), None
+            (inc for inc in self.incomes if inc.transaction.id == transaction_id), None
         )
 
     def get_category(self, name: str) -> Optional[Category]:
         return next((cat for cat in self.categories if cat.name == name), None)
 
-    def display_expenses(self, category_name: Optional[str] = None) -> None:
-        filtered_expenses = self.expenses
+    def display_incomes(self, category_name: Optional[str] = None) -> None:
+        filtered_incomes = self.incomes
         if category_name:
-            filtered_expenses = [
-                exp for exp in self.expenses if exp.category.name == category_name
+            filtered_incomes = [
+                inc for inc in self.incomes if inc.category.name == category_name
             ]
 
-        for expense in filtered_expenses:
-            print(expense)
+        for income in filtered_incomes:
+            print(income)
 
     def display_categories(self) -> None:
         for category in self.categories:
             print(f"{category.name} (Budget: {category.budget:.2f} DA)")
 
-    def edit_expense(self):
-        expense_id = input("Enter the ID of the expense to edit: ")
-        expense = next(
-            (exp for exp in self.expenses if exp.transaction.id == expense_id), None
-        )
-        if not expense:
-            print("Expense not found.")
+    def edit_income(self):
+        income_id = input("Enter the ID of the income to edit: ")
+        income = self.get_income(income_id)
+        if not income:
+            print("Income not found.")
             return
 
         new_date_str = input("Enter new date (YYYY-MM-DD) or leave blank: ")
@@ -114,8 +111,8 @@ class ExpenseManager:
             self.get_category(new_category_name) if new_category_name else None
         )
 
-        expense.edit(new_date, new_amount, new_description, new_category)
-        print("Expense edited successfully.")
+        income.edit(new_date, new_amount, new_description, new_category)
+        print("Income edited successfully.")
 
     def edit_category(self):
         category_name = input("Enter the name of the category to edit: ")
@@ -136,12 +133,10 @@ class ExpenseManager:
         print("Category edited successfully.")
 
     def move_transaction(self):
-        expense_id = input("Enter the ID of the expense to move: ")
-        expense = next(
-            (exp for exp in self.expenses if exp.transaction.id == expense_id), None
-        )
-        if not expense:
-            print("Expense not found.")
+        income_id = input("Enter the ID of the income to move: ")
+        income = self.get_income(income_id)
+        if not income:
+            print("Income not found.")
             return
 
         new_category_name = input("Enter the name of the new category: ")
@@ -150,21 +145,19 @@ class ExpenseManager:
             print("Category not found.")
             return
 
-        expense.edit(new_category=new_category)
-        print(f"Expense moved to category '{new_category_name}' successfully.")
+        income.edit(new_category=new_category)
+        print(f"Income moved to category '{new_category_name}' successfully.")
 
-    def delete_expense(self):
-        expense_id = input("Enter the ID of the expense to delete: ")
-        expense = next(
-            (exp for exp in self.expenses if exp.transaction.id == expense_id), None
-        )
-        if not expense:
-            print("Expense not found.")
+    def delete_income(self):
+        income_id = input("Enter the ID of the income to delete: ")
+        income = self.get_income(income_id)
+        if not income:
+            print("Income not found.")
             return
 
-        expense.delete()
-        self.expenses.remove(expense)
-        print("Expense deleted successfully.")
+        income.delete()
+        self.incomes.remove(income)
+        print("Income deleted successfully.")
 
     def delete_category(self):
         category_name = input("Enter the name of the category to delete: ")
@@ -173,19 +166,19 @@ class ExpenseManager:
             print("Category not found.")
             return
 
-        for expense in self.expenses:
-            if expense.category == category:
-                expense.delete()
-                self.expenses.remove(expense)
+        for income in self.incomes:
+            if income.category == category:
+                income.delete()
+                self.incomes.remove(income)
 
         self.categories.remove(category)
         print("Category deleted successfully.")
 
-    def input_expense(self, account_manager) -> None:
-        date_str = input("Enter expense date (YYYY-MM-DD): ")
+    def input_income(self, account_manager) -> None:
+        date_str = input("Enter income date (YYYY-MM-DD): ")
         date = datetime.strptime(date_str, "%Y-%m-%d")
-        amount = float(input("Enter expense amount: "))
-        description = input("Enter expense description: ")
+        amount = float(input("Enter income amount: "))
+        description = input("Enter income description: ")
         category_name = input("Enter category name: ")
         account_name = input("Enter account name: ")
 
@@ -197,12 +190,6 @@ class ExpenseManager:
         if not account:
             raise ValueError(f"Account '{account_name}' not found")
 
-        expense = Expense.add_expense(date, amount, description, category, account)
-        self.add_expense(expense)
-        print("Expense added successfully.")
-
-    def input_category(self):
-        name = input("Enter category name: ")
-        budget = float(input("Enter category budget: "))
-        self.add_category(name, budget)
-        print(f"Category '{name}' added successfully.")
+        income = Income.add_income(date, amount, description, category, account)
+        self.add_income(income)
+        print("Income added successfully.")
