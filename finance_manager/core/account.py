@@ -46,38 +46,47 @@ class AccountManager:
         for account in self.accounts:
             print(f"{account.name} - Balance: {account.balance:.2f} DA")
 
-    def edit_account_name(self, name: str, new_name: str) -> None:
+    def edit_account(self) -> None:
+        name = input("Enter account name: ")
         account = self.get_account(name)
         if not account:
             raise ValueError(f"Account '{name}' not found")
-        account.name = new_name
-        print(f"Account '{name}' updated to '{new_name}' successfully.")
+        new_name = input("Enter new account name: ")
+        new_balance = input("Enter new balance: ")
+        if new_name:
+            account.name = new_name
+        if new_balance:
+            account.balance = float(new_balance)
+        print(f"Account '{name}' edited successfully.")
 
-    def delete_account(self, name: str) -> None:
+    def delete_account(self) -> None:
+        name = input("Enter account name: ")
         account = self.get_account(name)
         if not account:
             raise ValueError(f"Account '{name}' not found")
         self.accounts.remove(account)
         print(f"Account '{name}' deleted successfully.")
 
-    def transfer_between_accounts(
-        self, from_account_name: str, to_account_name: str, amount: float
-    ) -> None:
-        from_account = self.get_account(from_account_name)
-        to_account = self.get_account(to_account_name)
-
-        if not from_account:
-            raise ValueError(f"Account '{from_account_name}' not found")
-        if not to_account:
-            raise ValueError(f"Account '{to_account_name}' not found")
-
-        from_account.transfer(amount, to_account)
+    def transfer_between_accounts(self) -> None:
+        source_name = input("Enter source account name: ")
+        target_name = input("Enter target account name: ")
+        amount = float(input("Enter amount to transfer: "))
+        source_account = self.get_account(source_name)
+        target_account = self.get_account(target_name)
+        if not source_account:
+            raise ValueError(f"Account '{source_name}' not found")
+        if not target_account:
+            raise ValueError(f"Account '{target_name}' not found")
+        source_account.transfer(amount, target_account)
         print(
-            f"Transferred {amount:.2f} DA from {from_account_name} to {to_account_name}"
+            f"{amount:.2f} DA transferred from '{source_name}' to '{target_name}' successfully."
         )
 
     def input_account(self) -> None:
         name = input("Enter account name: ")
-        initial_balance = float(input("Enter initial balance: "))
-        self.add_account(name, initial_balance)
+        initial_balance = input("Enter initial balance: ")
+        if initial_balance:
+            self.add_account(name, float(initial_balance))
+        else:
+            self.add_account(name, 0)
         print(f"Account '{name}' added successfully.")

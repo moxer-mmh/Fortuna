@@ -19,8 +19,8 @@ class FinanceManager:
         print("1. Manage Transactions")
         print("2. Manage Categories")
         print("3. Manage Accounts")
-        print("4. Generate Reports")
-        print("5. Settings")
+        # print("4. Generate Reports")
+        # print("5. Settings")
         print("0. Exit")
 
     def process_main_choice(self, choice):
@@ -30,10 +30,10 @@ class FinanceManager:
             self.manage_categories()
         elif choice == "3":
             self.manage_accounts()
-        elif choice == "4":
-            self.generate_reports()
-        elif choice == "5":
-            self.settings()
+        # elif choice == "4":
+        #     self.generate_reports()
+        # elif choice == "5":
+        #     self.settings()
         elif choice == "0":
             print("Thank you for using Finance Manager. Goodbye!")
             exit()
@@ -50,7 +50,8 @@ class FinanceManager:
             print("5. Delete Expense")
             print("6. Delete Income")
             print("7. Move Transaction")
-            print("8. View Transactions")
+            print("8. View Expense Transactions")
+            print("9. View Income Transactions")
             print("0. Back to Main Menu")
 
             choice = input("Enter your choice: ")
@@ -69,7 +70,9 @@ class FinanceManager:
             elif choice == "7":
                 self.move_transaction()
             elif choice == "8":
-                self.view_transactions()
+                self.expense_manager.display_expenses()
+            elif choice == "9":
+                self.income_manager.display_incomes()
             elif choice == "0":
                 break
             else:
@@ -84,7 +87,8 @@ class FinanceManager:
             print("4. Edit Income Category")
             print("5. Delete Expense Category")
             print("6. Delete Income Category")
-            print("7. View Categories")
+            print("7. View Expense Categories")
+            print("8. View Income Categories")
             print("0. Back to Main Menu")
 
             choice = input("Enter your choice: ")
@@ -101,7 +105,9 @@ class FinanceManager:
             elif choice == "6":
                 self.income_manager.delete_category()
             elif choice == "7":
-                self.view_categories()
+                self.expense_manager.display_categories()
+            elif choice == "8":
+                self.income_manager.display_categories()
             elif choice == "0":
                 break
             else:
@@ -121,7 +127,7 @@ class FinanceManager:
             if choice == "1":
                 self.account_manager.input_account()
             elif choice == "2":
-                self.account_manager.edit_account_name()
+                self.account_manager.edit_account()
             elif choice == "3":
                 self.account_manager.delete_account()
             elif choice == "4":
@@ -133,101 +139,94 @@ class FinanceManager:
             else:
                 print("Invalid choice. Please try again.")
 
-    def generate_reports(self):
-        while True:
-            print("\n----- Generate Reports -----")
-            print("1. Monthly Summary")
-            print("2. Category-wise Expenses")
-            print("3. Category-wise Income")
-            print("4. Account Balances")
-            print("5. Budget vs Actual")
-            print("0. Back to Main Menu")
+    # def generate_reports(self):
+    #     while True:
+    #         print("\n----- Generate Reports -----")
+    #         print("1. Monthly Summary")
+    #         print("2. Category-wise Expenses")
+    #         print("3. Category-wise Income")
+    #         print("4. Account Balances")
+    #         print("5. Budget vs Actual")
+    #         print("0. Back to Main Menu")
 
-            choice = input("Enter your choice: ")
-            if choice == "1":
-                self.monthly_summary()
-            elif choice == "2":
-                self.category_wise_expenses()
-            elif choice == "3":
-                self.category_wise_income()
-            elif choice == "4":
-                self.account_balances()
-            elif choice == "5":
-                self.budget_vs_actual()
-            elif choice == "0":
-                break
-            else:
-                print("Invalid choice. Please try again.")
+    #         choice = input("Enter your choice: ")
+    #         if choice == "1":
+    #             self.monthly_summary()
+    #         elif choice == "2":
+    #             self.category_wise_expenses()
+    #         elif choice == "3":
+    #             self.category_wise_income()
+    #         elif choice == "4":
+    #             self.account_balances()
+    #         elif choice == "5":
+    #             self.budget_vs_actual()
+    #         elif choice == "0":
+    #             break
+    #         else:
+    #             print("Invalid choice. Please try again.")
 
-    def settings(self):
-        while True:
-            print("\n----- Settings -----")
-            print("1. Set Default Currency")
-            print("2. Set Budget Alerts")
-            print("3. Export Data")
-            print("4. Import Data")
-            print("0. Back to Main Menu")
+    # def settings(self):
+    #     while True:
+    #         print("\n----- Settings -----")
+    #         print("1. Set Default Currency")
+    #         print("2. Set Budget Alerts")
+    #         print("3. Export Data")
+    #         print("4. Import Data")
+    #         print("0. Back to Main Menu")
 
-            choice = input("Enter your choice: ")
-            if choice == "1":
-                self.set_default_currency()
-            elif choice == "2":
-                self.set_budget_alerts()
-            elif choice == "3":
-                self.export_data()
-            elif choice == "4":
-                self.import_data()
-            elif choice == "0":
-                break
-            else:
-                print("Invalid choice. Please try again.")
+    #         choice = input("Enter your choice: ")
+    #         if choice == "1":
+    #             self.set_default_currency()
+    #         elif choice == "2":
+    #             self.set_budget_alerts()
+    #         elif choice == "3":
+    #             self.export_data()
+    #         elif choice == "4":
+    #             self.import_data()
+    #         elif choice == "0":
+    #             break
+    #         else:
+    #             print("Invalid choice. Please try again.")
 
-    def view_transactions(self):
-        print("Viewing all transactions...")
-        self.expense_manager.display_expenses()
-        self.income_manager.display_incomes()
+    # def monthly_summary(self):
+    #     print("Generating monthly summary...")
 
-    def view_categories(self):
-        print("Viewing all categories...")
-        self.expense_manager.display_categories()
-        self.income_manager.display_categories()
+    # def category_wise_expenses(self):
+    #     print("Generating category-wise expense report...")
 
-    def monthly_summary(self):
-        print("Generating monthly summary...")
+    # def category_wise_income(self):
+    #     print("Generating category-wise income report...")
 
-    def category_wise_expenses(self):
-        print("Generating category-wise expense report...")
+    # def account_balances(self):
+    #     print("Generating account balances report...")
+    #     self.account_manager.display_accounts()
 
-    def category_wise_income(self):
-        print("Generating category-wise income report...")
+    # def budget_vs_actual(self):
+    #     print("Generating budget vs actual report...")
 
-    def account_balances(self):
-        print("Generating account balances report...")
-        self.account_manager.display_accounts()
+    # def set_default_currency(self):
+    #     print("Setting default currency...")
 
-    def budget_vs_actual(self):
-        print("Generating budget vs actual report...")
+    # def set_budget_alerts(self):
+    #     print("Setting budget alerts...")
 
-    def set_default_currency(self):
-        print("Setting default currency...")
+    # def export_data(self):
+    #     print("Exporting data...")
 
-    def set_budget_alerts(self):
-        print("Setting budget alerts...")
-
-    def export_data(self):
-        print("Exporting data...")
-
-    def import_data(self):
-        print("Importing data...")
+    # def import_data(self):
+    #     print("Importing data...")
 
     def move_transaction(self):
         print("\n----- Move Transaction -----")
         print("1. Move Expense")
         print("2. Move Income")
+        print("0. Cancel")
         choice = input("Enter your choice: ")
         if choice == "1":
             self.expense_manager.move_transaction()
         elif choice == "2":
             self.income_manager.move_transaction()
+        elif choice == "0":
+            pass
         else:
             print("Invalid choice.")
