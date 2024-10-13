@@ -15,7 +15,10 @@ class Income:
         self.account.deposit(self.transaction.amount)
 
     def __str__(self):
-        return f"Income: {self.transaction} - Category: {self.category.name} - Account: {self.account.name}"
+        return (
+            f"Income: {self.transaction} - Description: {self.transaction.description} "
+            f"- Category: {self.category.name} - Account: {self.account.name}"
+        )
 
     @classmethod
     def add_income(

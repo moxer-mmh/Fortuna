@@ -16,7 +16,10 @@ class Expense:
         self.account.withdraw(self.transaction.amount)
 
     def __str__(self):
-        return f"Expense: {self.transaction} - Category: {self.category.name} - Account: {self.account.name}"
+        return (
+            f"Expense: {self.transaction} - Description: {self.transaction.description} "
+            f"- Category: {self.category.name} - Account: {self.account.name}"
+        )
 
     @classmethod
     def add_expense(

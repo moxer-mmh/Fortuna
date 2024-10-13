@@ -58,9 +58,8 @@ class TestAccountManager:
 
     def test_edit_account(self, account_manager, monkeypatch):
         account_manager.add_account("Savings", 1000)
-        monkeypatch.setattr("builtins.input", lambda _: "Savings")
-        monkeypatch.setattr("builtins.input", lambda _: "New Savings")
-        monkeypatch.setattr("builtins.input", lambda _: "1500")
+        inputs = iter(["Savings", "New Savings", "1500"])
+        monkeypatch.setattr("builtins.input", lambda _: next(inputs))
         account_manager.edit_account()
         account = account_manager.get_account("New Savings")
         assert account.name == "New Savings"
@@ -75,9 +74,8 @@ class TestAccountManager:
     def test_transfer_between_accounts(self, account_manager, monkeypatch):
         account_manager.add_account("Savings", 1000)
         account_manager.add_account("Checking", 500)
-        monkeypatch.setattr("builtins.input", lambda _: "Savings")
-        monkeypatch.setattr("builtins.input", lambda _: "Checking")
-        monkeypatch.setattr("builtins.input", lambda _: "300")
+        inputs = iter(["Savings", "Checking", "300"])
+        monkeypatch.setattr("builtins.input", lambda _: next(inputs))
         account_manager.transfer_between_accounts()
         savings = account_manager.get_account("Savings")
         checking = account_manager.get_account("Checking")
