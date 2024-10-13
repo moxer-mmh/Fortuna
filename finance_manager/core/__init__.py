@@ -5,5 +5,13 @@ from .expense import Expense, ExpenseManager
 from .income import Income, IncomeManager
 
 
-
-__all__ = ['Category', 'Transaction', 'Account', 'AccountManager', 'Expense', 'ExpenseManager', 'Income', 'IncomeManager']
+__all__ = [
+    "Category",
+    "Transaction",
+    "Account",
+    "AccountManager",
+    "Expense",
+    "ExpenseManager",
+    "Income",
+    "IncomeManager",
+]

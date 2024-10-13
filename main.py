@@ -1,6 +1,7 @@
 import sys
 from finance_manager import FinanceManager
 
+
 def main():
     try:
         finance_manager = FinanceManager()
@@ -11,6 +12,7 @@ def main():
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

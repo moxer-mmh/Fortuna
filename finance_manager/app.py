@@ -1,4 +1,3 @@
-from typing import List, Optional
 from .core import ExpenseManager, IncomeManager, AccountManager
 
 
