@@ -13,7 +13,6 @@ setup(
         "dev": [
             "pytest",
             "pytest-cov",
-            "flake8",
         ],
     },
     setup_requires=["setuptools>=45.0"],
