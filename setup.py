@@ -13,8 +13,6 @@ setup(
         "dev": [
             "pytest",
             "pytest-cov",
-            "black",
-            "autoflake",
         ],
     },
     setup_requires=["setuptools>=45.0"],
