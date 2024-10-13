@@ -14,7 +14,6 @@ setup(
             "pytest",
             "pytest-cov",
             "black",
-            "flake8",
             "autoflake",
         ],
     },
