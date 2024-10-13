@@ -63,10 +63,10 @@ class IncomeManager:
     def add_income(self, income: Income) -> None:
         self.incomes.append(income)
 
-    def add_category(self, name: str, budget: float) -> None:
+    def add_category(self, name: str, target: float) -> None:
         if self.get_category(name):
             raise ValueError(f"Category '{name}' already exists")
-        new_category = Category(name, budget)
+        new_category = Category(name, target)
         self.categories.append(new_category)
 
     def get_income(self, transaction_id: str) -> Optional[Income]:
@@ -89,7 +89,7 @@ class IncomeManager:
 
     def display_categories(self) -> None:
         for category in self.categories:
-            print(f"{category.name} (Budget: {category.budget:.2f} DA)")
+            print(f"{category.name} (Target: {category.budget:.2f} DA)")
 
     def edit_income(self):
         income_id = input("Enter the ID of the income to edit: ")
@@ -122,13 +122,13 @@ class IncomeManager:
             return
 
         new_name = input("Enter new name or leave blank: ")
-        new_budget_str = input("Enter new budget or leave blank: ")
-        new_budget = float(new_budget_str) if new_budget_str else None
+        new_target_str = input("Enter new target or leave blank: ")
+        new_target = float(new_target_str) if new_target_str else None
 
         if new_name:
             category.name = new_name
-        if new_budget is not None:
-            category.budget = new_budget
+        if new_target is not None:
+            category.budget = new_target
 
         print("Category edited successfully.")
 
@@ -193,3 +193,12 @@ class IncomeManager:
         income = Income.add_income(date, amount, description, category, account)
         self.add_income(income)
         print("Income added successfully.")
+
+    def input_category(self):
+        name = input("Enter category name: ")
+        target = input("Enter category target: ")
+        if target:
+            self.add_category(name, float(target))
+        else:
+            self.add_category(name, 0)
+        print(f"Category '{name}' added successfully.")

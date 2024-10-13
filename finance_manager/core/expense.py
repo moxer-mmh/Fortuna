@@ -203,6 +203,9 @@ class ExpenseManager:
 
     def input_category(self):
         name = input("Enter category name: ")
-        budget = float(input("Enter category budget: "))
-        self.add_category(name, budget)
+        budget = input("Enter category budget: ")
+        if budget:
+            self.add_category(name, float(budget))
+        else:
+            self.add_category(name, 0)
         print(f"Category '{name}' added successfully.")

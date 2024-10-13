@@ -8,8 +8,15 @@ setup(
         "numpy",
         "pandas",
         "matplotlib",
-
     ],
+    extras_require={
+        "dev": [
+            "pytest",
+            "pytest-cov",
+            "flake8",
+        ],
+    },
+    setup_requires=["setuptools>=45.0"],
     entry_points={
         "console_scripts": [
             "finance-manager=finance_manager.main:main",
