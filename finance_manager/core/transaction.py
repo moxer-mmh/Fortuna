@@ -13,6 +13,7 @@ class Transaction:
         category_id: str = None,
         type: str = None,
         id: str = None,
+        subscription_id: str = None,
     ):
         self.id = id or str(uuid.uuid4())
         self.date = (
@@ -23,14 +24,15 @@ class Transaction:
         self.account_id = account_id
         self.category_id = category_id
         self.type = type
+        self.subscription_id = subscription_id
         self.db = DatabaseConnection()
 
     def save(self):
         self.db.execute_query(
             """
             INSERT OR REPLACE INTO transactions 
-            (id, date, amount, description, account_id, category_id, type)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (id, date, amount, description, account_id, category_id, type, subscription_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?,?)
             """,
             (
                 self.id,
@@ -40,6 +42,7 @@ class Transaction:
                 self.account_id,
                 self.category_id,
                 self.type,
+                self.subscription_id,
             ),
         )
 
@@ -48,7 +51,7 @@ class Transaction:
         db = DatabaseConnection()
         result = db.fetch_one(
             """
-            SELECT id, date, amount, description, account_id, category_id, type
+            SELECT id, date, amount, description, account_id, category_id, type, subscription_id
             FROM transactions
             WHERE id = ?
             """,
@@ -63,6 +66,7 @@ class Transaction:
                 category_id=result[5],
                 type=result[6],
                 id=result[0],
+                subscription_id=result[7],
             )
         return None
 

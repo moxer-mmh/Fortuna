@@ -28,9 +28,24 @@ def init_database(db_path):
         description TEXT,
         account_id TEXT NOT NULL,
         category_id TEXT NOT NULL,
-        type TEXT NOT NULL,  -- 'expense' or 'income'
+        type TEXT NOT NULL,  -- 'expense', 'income', or 'subscription'
+        subscription_id TEXT,  -- NULL if not a subscription transaction
         FOREIGN KEY (account_id) REFERENCES accounts (id),
-        FOREIGN KEY (category_id) REFERENCES categories (id)
+        FOREIGN KEY (category_id) REFERENCES categories (id),
+        FOREIGN KEY (subscription_id) REFERENCES subscriptions (id)
+    );
+
+    CREATE TABLE IF NOT EXISTS subscriptions (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        amount REAL NOT NULL,
+        frequency TEXT NOT NULL,
+        next_payment TEXT NOT NULL,
+        category_id TEXT NOT NULL,
+        account_id TEXT NOT NULL,
+        active BOOLEAN NOT NULL DEFAULT 1,
+        FOREIGN KEY (category_id) REFERENCES categories (id),
+        FOREIGN KEY (account_id) REFERENCES accounts (id)
     );
     """
     )

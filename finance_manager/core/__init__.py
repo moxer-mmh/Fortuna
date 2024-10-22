@@ -3,6 +3,7 @@ from .transaction import Transaction
 from .account import Account, AccountManager
 from .expense import Expense, ExpenseManager
 from .income import Income, IncomeManager
+from .subscription import Subscription, SubscriptionManager
 
 
 __all__ = [
@@ -14,4 +15,6 @@ __all__ = [
     "ExpenseManager",
     "Income",
     "IncomeManager",
+    "Subscription",
+    "SubscriptionManager",
 ]
