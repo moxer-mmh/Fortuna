@@ -24,8 +24,21 @@ class Expense:
         self.transaction.category_id = category.id
 
     def save(self):
-        self.transaction.save()
-        self.account.withdraw(self.transaction.amount)
+        if not self.category.can_add_transaction(
+            self.transaction.amount, self.transaction.date
+        ):
+            print(f"Budget limit reached for category: {self.category.name} this month")
+            print("Do you want to continue?")
+            if input("y/n: ").lower() != "y":
+                return 0
+            else:
+                self.transaction.save()
+                self.account.withdraw(self.transaction.amount)
+                return 1
+        else:
+            self.transaction.save()
+            self.account.withdraw(self.transaction.amount)
+            return 1
 
     def delete(self) -> None:
         self.account.deposit(self.transaction.amount)
@@ -49,8 +62,11 @@ class Expense:
             type="expense",
         )
         expense = cls(transaction, category, account)
-        expense.save()
-        return expense
+        state = expense.save()
+        if state == 1:
+            return expense
+        else:
+            return None
 
     def __str__(self):
         return (
@@ -189,8 +205,11 @@ class ExpenseManager:
             expense.category = new_category
             expense.transaction.category_id = new_category.id
 
-        expense.save()
-        print("Expense edited successfully.")
+        state = expense.save()
+        if state == 1:
+            print("Expense edited successfully.")
+        else:
+            print("Failed to edit expense.")
 
     def edit_category(self):
         category_name = input("Enter the name of the category to edit: ")
@@ -255,8 +274,11 @@ class ExpenseManager:
                 raise ValueError(f"Account '{account_name}' not found")
 
             expense = Expense.add_expense(date, amount, description, category, account)
-            print("Expense added successfully.")
-            return expense
+            if expense is not None:
+                print("Expense added successfully.")
+                return expense
+            else:
+                print("Failed to add expense.")
         except ValueError as e:
             print(f"Error: {str(e)}")
             return None

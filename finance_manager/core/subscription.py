@@ -59,38 +59,75 @@ class Subscription:
     def process_payment(self) -> Optional[Transaction]:
         if not self.active or datetime.now() < self.next_payment:
             return None
-
-        transaction = Transaction(
-            date=self.next_payment,
-            amount=self.amount,
-            description=f"Subscription payment - {self.name}",
-            account_id=self.account.id,
-            category_id=self.category.id,
-            type="subscription",
-            subscription_id=self.id,
-        )
-
-        transaction.save()
-        self.account.withdraw(self.amount)
-
-        if self.frequency == "weekly":
-            self.next_payment += timedelta(days=7)
-        elif self.frequency == "monthly":
-            if self.next_payment.month == 12:
-                self.next_payment = self.next_payment.replace(
-                    year=self.next_payment.year + 1, month=1
-                )
+        if not self.category.can_add_transaction(self.amount, self.next_payment):
+            print(f"Budget limit reached for category: {self.category.name} this month")
+            print("Do you want to continue?")
+            if input("y/n: ").lower() != "y":
+                return None
             else:
-                self.next_payment = self.next_payment.replace(
-                    month=self.next_payment.month + 1
+                transaction = Transaction(
+                    date=self.next_payment,
+                    amount=self.amount,
+                    description=f"Subscription payment - {self.name}",
+                    account_id=self.account.id,
+                    category_id=self.category.id,
+                    type="subscription",
+                    subscription_id=self.id,
                 )
-        elif self.frequency == "yearly":
-            self.next_payment = self.next_payment.replace(
-                year=self.next_payment.year + 1
+
+                transaction.save()
+                self.account.withdraw(self.amount)
+
+                if self.frequency == "weekly":
+                    self.next_payment += timedelta(days=7)
+                elif self.frequency == "monthly":
+                    if self.next_payment.month == 12:
+                        self.next_payment = self.next_payment.replace(
+                            year=self.next_payment.year + 1, month=1
+                        )
+                    else:
+                        self.next_payment = self.next_payment.replace(
+                            month=self.next_payment.month + 1
+                        )
+                elif self.frequency == "yearly":
+                    self.next_payment = self.next_payment.replace(
+                        year=self.next_payment.year + 1
+                    )
+
+                self.save()
+                return transaction
+        else:
+            transaction = Transaction(
+                date=self.next_payment,
+                amount=self.amount,
+                description=f"Subscription payment - {self.name}",
+                account_id=self.account.id,
+                category_id=self.category.id,
+                type="subscription",
+                subscription_id=self.id,
             )
 
-        self.save()
-        return transaction
+            transaction.save()
+            self.account.withdraw(self.amount)
+
+            if self.frequency == "weekly":
+                self.next_payment += timedelta(days=7)
+            elif self.frequency == "monthly":
+                if self.next_payment.month == 12:
+                    self.next_payment = self.next_payment.replace(
+                        year=self.next_payment.year + 1, month=1
+                    )
+                else:
+                    self.next_payment = self.next_payment.replace(
+                        month=self.next_payment.month + 1
+                    )
+            elif self.frequency == "yearly":
+                self.next_payment = self.next_payment.replace(
+                    year=self.next_payment.year + 1
+                )
+
+            self.save()
+            return transaction
 
     @classmethod
     def get_by_id(cls, id: str) -> Optional["Subscription"]:
