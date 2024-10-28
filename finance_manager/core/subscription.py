@@ -193,8 +193,43 @@ class SubscriptionManager:
     def __init__(self):
         self.db = DatabaseConnection()
 
-    def add_subscription(self, subscription: Subscription) -> None:
-        subscription.save()
+    def add_subscription(
+        self,
+        expense_manager,
+        account_manager,
+        name,
+        amount,
+        frequency,
+        category_name,
+        account_name,
+        next_payment_str,
+    ) -> Optional[Subscription]:
+        try:
+
+            category = expense_manager.get_category(category_name)
+            if not category:
+                raise ValueError(f"Category '{category_name}' not found")
+
+            account = account_manager.get_account(account_name)
+            if not account:
+                raise ValueError(f"Account '{account_name}' not found")
+
+            next_payment = datetime.strptime(next_payment_str, "%Y-%m-%d")
+
+            subscription = Subscription(
+                name=name,
+                amount=amount,
+                frequency=frequency,
+                category=category,
+                account=account,
+                next_payment=next_payment,
+            )
+            subscription.save()
+            print("Subscription added successfully.")
+            return subscription
+        except ValueError as e:
+            print(f"Error: {str(e)}")
+            return None
 
     def get_subscription(self, id: str) -> Optional[Subscription]:
         return Subscription.get_by_id(id)
@@ -253,10 +288,7 @@ class SubscriptionManager:
             print(subscription)
         print("-" * 80)
 
-    def display_subscriptions_transactions(self) -> None:
-        subscription_id = input(
-            "Enter the id of the Subscription or Leave Blank for all: "
-        )
+    def display_subscriptions_transactions(self, subscription_id) -> None:
 
         if subscription_id:
             subscription = self.get_subscription(subscription_id)
@@ -328,10 +360,19 @@ class SubscriptionManager:
         print(f"Total Transactions: {transaction_count}")
         print(f"Total Amount: ${total_amount:.2f}")
 
-    def edit_subscription(self) -> None:
+    def edit_subscription(
+        self,
+        subscription_id,
+        new_name,
+        new_amount_str,
+        new_frequency,
+        new_category_name,
+        new_account_name,
+        new_next_payment_str,
+        new_active_str,
+    ) -> None:
         try:
             self.display_subscriptions()
-            subscription_id = input("Enter the ID of the subscription to edit: ")
             subscription = self.get_subscription(subscription_id)
 
             if not subscription:
@@ -341,34 +382,6 @@ class SubscriptionManager:
             print("\nCurrent subscription details:")
             print(subscription)
             print("\nLeave fields blank to keep current values.")
-
-            new_name = input("Enter new name or press Enter to keep current: ").strip()
-            new_amount_str = input(
-                "Enter new amount or press Enter to keep current: "
-            ).strip()
-            new_frequency = (
-                input(
-                    "Enter new frequency (weekly/monthly/yearly) or press Enter to keep current: "
-                )
-                .strip()
-                .lower()
-            )
-            new_category_name = input(
-                "Enter new category name or press Enter to keep current: "
-            ).strip()
-            new_account_name = input(
-                "Enter new account name or press Enter to keep current: "
-            ).strip()
-            new_next_payment_str = input(
-                "Enter new next payment date (YYYY-MM-DD) or press Enter to keep current: "
-            ).strip()
-            new_active_str = (
-                input(
-                    "Enter new status (active/inactive) or press Enter to keep current: "
-                )
-                .strip()
-                .lower()
-            )
 
             if new_name:
                 subscription.name = new_name
@@ -429,10 +442,9 @@ class SubscriptionManager:
         except Exception as e:
             print(f"Error editing subscription: {str(e)}")
 
-    def delete_subscription(self) -> None:
+    def delete_subscription(self, subscription_id) -> None:
         try:
             self.display_subscriptions()
-            subscription_id = input("Enter the ID of the subscription to delete: ")
             subscription = self.get_subscription(subscription_id)
 
             if not subscription:
@@ -491,43 +503,3 @@ class SubscriptionManager:
 
         except Exception as e:
             print(f"Error deleting subscription: {str(e)}")
-
-    def input_subscription(
-        self, expense_manager, account_manager
-    ) -> Optional[Subscription]:
-        try:
-            name = input("Enter subscription name: ")
-            amount = float(input("Enter subscription amount: "))
-            frequency = input("Enter frequency (weekly/monthly/yearly): ").lower()
-            if frequency not in ["weekly", "monthly", "yearly"]:
-                raise ValueError("Invalid frequency")
-
-            category_name = input("Enter expense category name: ")
-            account_name = input("Enter account name: ")
-
-            category = expense_manager.get_category(category_name)
-            if not category:
-                raise ValueError(f"Category '{category_name}' not found")
-
-            account = account_manager.get_account(account_name)
-            if not account:
-                raise ValueError(f"Account '{account_name}' not found")
-
-            next_payment_str = input("Enter first payment date (YYYY-MM-DD): ")
-            next_payment = datetime.strptime(next_payment_str, "%Y-%m-%d")
-
-            subscription = Subscription(
-                name=name,
-                amount=amount,
-                frequency=frequency,
-                category=category,
-                account=account,
-                next_payment=next_payment,
-            )
-            self.add_subscription(subscription)
-            print("Subscription added successfully.")
-            return subscription
-
-        except ValueError as e:
-            print(f"Error: {str(e)}")
-            return None

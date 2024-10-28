@@ -59,17 +59,65 @@ class FinanceManager:
 
             choice = input("Enter your choice: ")
             if choice == "1":
-                self.expense_manager.input_expense(self.account_manager)
+                date_str = input("Enter expense date (YYYY-MM-DD): ")
+                amount = float(input("Enter expense amount: "))
+                description = input("Enter expense description: ")
+                category_name = input("Enter category name: ")
+                account_name = input("Enter account name: ")
+                self.expense_manager.add_expense(
+                    self.account_manager,
+                    date_str,
+                    amount,
+                    description,
+                    category_name,
+                    account_name,
+                )
             elif choice == "2":
-                self.income_manager.input_income(self.account_manager)
+                date_str = input("Enter income date (YYYY-MM-DD): ")
+                amount = float(input("Enter income amount: "))
+                description = input("Enter income description: ")
+                category_name = input("Enter category name: ")
+                account_name = input("Enter account name: ")
+                self.income_manager.add_income(
+                    self.account_manager,
+                    date_str,
+                    amount,
+                    description,
+                    category_name,
+                    account_name,
+                )
             elif choice == "3":
-                self.expense_manager.edit_expense()
+                expense_id = input("Enter the ID of the expense to edit: ")
+                new_date_str = input("Enter new date (YYYY-MM-DD) or leave blank: ")
+                new_amount_str = input("Enter new amount or leave blank: ")
+                new_description = input("Enter new description or leave blank: ")
+                new_category_name = input("Enter new category name or leave blank: ")
+                self.expense_manager.edit_expense(
+                    expense_id,
+                    new_date_str,
+                    new_amount_str,
+                    new_description,
+                    new_category_name,
+                )
             elif choice == "4":
-                self.income_manager.edit_income()
+                income_id = input("Enter the ID of the income to edit: ")
+                new_date_str = input("Enter new date (YYYY-MM-DD) or leave blank: ")
+                new_amount_str = input("Enter new amount or leave blank: ")
+                new_description = input("Enter new description or leave blank: ")
+                new_category_name = input("Enter new category name or leave blank: ")
+                self.income_manager.edit_income(
+                    income_id,
+                    new_date_str,
+                    new_amount_str,
+                    new_description,
+                    new_category_name,
+                )
             elif choice == "5":
-                self.expense_manager.delete_expense()
+                expense_id = input("Enter the ID of the expense to delete: ")
+                self.expense_manager.delete_expense(expense_id)
             elif choice == "6":
-                self.income_manager.delete_income()
+                income_id = input("Enter the ID of the income to delete: ")
+                self.income_manager.delete_income(income_id)
             elif choice == "7":
                 self.move_transaction()
             elif choice == "8":
@@ -96,17 +144,33 @@ class FinanceManager:
 
             choice = input("Enter your choice: ")
             if choice == "1":
-                self.expense_manager.input_category()
+                name = input("Enter category name: ")
+                budget = input("Enter category budget: ")
+                if not budget:
+                    budget = 0
+                self.expense_manager.add_category(name, float(budget))
             elif choice == "2":
-                self.income_manager.input_category()
+                name = input("Enter category name: ")
+                target = input("Enter target amount: ")
+                if not target:
+                    target = 0
+                self.income_manager.add_category(name, target)
             elif choice == "3":
-                self.expense_manager.edit_category()
+                category_name = input("Enter the name of the category to edit: ")
+                new_name = input("Enter new category name: ")
+                new_budget = input("Enter new budget: ")
+                self.expense_manager.edit_category(category_name, new_name, new_budget)
             elif choice == "4":
-                self.income_manager.edit_category()
+                category_name = input("Enter the name of the category to edit: ")
+                new_name = input("Enter new category name: ")
+                new_target = input("Enter new target amount: ")
+                self.income_manager.edit_category(category_name, new_name, new_target)
             elif choice == "5":
-                self.expense_manager.delete_category()
+                category_name = input("Enter the name of the category to delete: ")
+                self.expense_manager.delete_category(category_name)
             elif choice == "6":
-                self.income_manager.delete_category()
+                category_name = input("Enter the name of the category to delete: ")
+                self.income_manager.delete_category(category_name)
             elif choice == "7":
                 self.expense_manager.display_categories()
             elif choice == "8":
@@ -128,13 +192,32 @@ class FinanceManager:
 
             choice = input("Enter your choice: ")
             if choice == "1":
-                self.account_manager.input_account()
+                name = input("Enter account name: ")
+                balance = input("Enter initial balance: ")
+                if not balance:
+                    balance = 0
+                self.account_manager.add_account(name, float(balance))
             elif choice == "2":
-                self.account_manager.edit_account()
+                name = input("Enter account name: ")
+                new_name = input("Enter new account name: ")
+                new_balance = input("Enter new balance: ")
+                self.account_manager.edit_account(name, new_name, new_balance)
             elif choice == "3":
-                self.account_manager.delete_account()
+                name = input("Enter account name: ")
+                self.account_manager.delete_account(name)
             elif choice == "4":
-                self.account_manager.transfer_between_accounts()
+                from_account_name = input("Enter account to transfer from: ")
+
+                to_account_name = input("Enter account to transfer to: ")
+
+                amount = input("Enter amount to transfer: ")
+                if not amount:
+                    amount = 0
+                self.account_manager.transfer_between_accounts(
+                    from_account_name,
+                    to_account_name,
+                    float(amount),
+                )
             elif choice == "5":
                 self.account_manager.display_accounts()
             elif choice == "0":
@@ -155,13 +238,70 @@ class FinanceManager:
 
             choice = input("Enter your choice: ")
             if choice == "1":
-                self.subscription_manager.input_subscription(
-                    self.expense_manager, self.account_manager
+                name = input("Enter subscription name: ")
+                amount = float(input("Enter subscription amount: "))
+                frequency = input("Enter frequency (weekly/monthly/yearly): ").lower()
+                if frequency not in ["weekly", "monthly", "yearly"]:
+                    raise ValueError("Invalid frequency")
+                category_name = input("Enter expense category name: ")
+                account_name = input("Enter account name: ")
+                next_payment_str = input("Enter first payment date (YYYY-MM-DD): ")
+
+                self.subscription_manager.add_subscription(
+                    self.expense_manager,
+                    self.account_manager,
+                    name,
+                    amount,
+                    frequency,
+                    category_name,
+                    account_name,
+                    next_payment_str,
                 )
             elif choice == "2":
-                self.subscription_manager.edit_subscription()
+
+                subscription_id = input("Enter the ID of the subscription to edit: ")
+                new_name = input(
+                    "Enter new name or press Enter to keep current: "
+                ).strip()
+                new_amount_str = input(
+                    "Enter new amount or press Enter to keep current: "
+                ).strip()
+                new_frequency = (
+                    input(
+                        "Enter new frequency (weekly/monthly/yearly) or press Enter to keep current: "
+                    )
+                    .strip()
+                    .lower()
+                )
+                new_category_name = input(
+                    "Enter new category name or press Enter to keep current: "
+                ).strip()
+                new_account_name = input(
+                    "Enter new account name or press Enter to keep current: "
+                ).strip()
+                new_next_payment_str = input(
+                    "Enter new next payment date (YYYY-MM-DD) or press Enter to keep current: "
+                ).strip()
+                new_active_str = (
+                    input(
+                        "Enter new status (active/inactive) or press Enter to keep current: "
+                    )
+                    .strip()
+                    .lower()
+                )
+                self.subscription_manager.edit_subscription(
+                    subscription_id,
+                    new_name,
+                    new_amount_str,
+                    new_frequency,
+                    new_category_name,
+                    new_account_name,
+                    new_next_payment_str,
+                    new_active_str,
+                )
             elif choice == "3":
-                self.subscription_manager.delete_subscription()
+                subscription_id = input("Enter the ID of the subscription to delete: ")
+                self.subscription_manager.delete_subscription(subscription_id)
             elif choice == "4":
                 processed = self.subscription_manager.process_due_payments()
                 if processed:
@@ -173,7 +313,12 @@ class FinanceManager:
             elif choice == "5":
                 self.subscription_manager.display_subscriptions()
             elif choice == "6":
-                self.subscription_manager.display_subscriptions_transactions()
+                subscription_id = input(
+                    "Enter the id of the Subscription or Leave Blank for all: "
+                )
+                self.subscription_manager.display_subscriptions_transactions(
+                    subscription_id
+                )
             elif choice == "0":
                 break
             else:

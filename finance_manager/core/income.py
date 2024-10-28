@@ -56,8 +56,33 @@ class IncomeManager:
     def __init__(self):
         self.db = DatabaseConnection()
 
-    def add_income(self, income: Income) -> None:
-        income.save()
+    def add_income(
+        self,
+        account_manager,
+        date_str,
+        amount,
+        description,
+        category_name,
+        account_name,
+    ) -> None:
+        try:
+
+            date = datetime.strptime(date_str, "%Y-%m-%d")
+
+            category = self.get_category(category_name)
+            if not category:
+                raise ValueError(f"Category '{category_name}' not found")
+
+            account = account_manager.get_account(account_name)
+            if not account:
+                raise ValueError(f"Account '{account_name}' not found")
+
+            income = Income.add_income(date, amount, description, category, account)
+            print("Income added successfully.")
+            return income
+        except ValueError as e:
+            print(f"Error: {str(e)}")
+            return None
 
     def add_category(self, name: str, target: float) -> None:
         category = Category.get_by_name(name, "income")
@@ -66,6 +91,7 @@ class IncomeManager:
 
         category = Category(name=name, budget=target, type="income")
         category.save()
+        print("Category added successfully.")
 
     def get_income(self, transaction_id: str) -> Optional[Income]:
         transaction = Transaction.get_by_id(transaction_id)
@@ -154,17 +180,18 @@ class IncomeManager:
         for category in categories:
             print(f"{category.name} (Target: {category.budget:.2f} DA)")
 
-    def edit_income(self):
-        income_id = input("Enter the ID of the income to edit: ")
+    def edit_income(
+        self,
+        income_id,
+        new_date_str,
+        new_amount_str,
+        new_description,
+        new_category_name,
+    ):
         income = self.get_income(income_id)
         if not income:
             print("Income not found.")
             return
-
-        new_date_str = input("Enter new date (YYYY-MM-DD) or leave blank: ")
-        new_amount_str = input("Enter new amount or leave blank: ")
-        new_description = input("Enter new description or leave blank: ")
-        new_category_name = input("Enter new category name or leave blank: ")
 
         income.account.withdraw(income.transaction.amount)
 
@@ -185,15 +212,11 @@ class IncomeManager:
         income.save()
         print("Income edited successfully.")
 
-    def edit_category(self):
-        category_name = input("Enter the name of the category to edit: ")
+    def edit_category(self, category_name, new_name, new_target):
         category = self.get_category(category_name)
         if not category:
             print("Category not found.")
             return
-
-        new_name = input("Enter new category name: ")
-        new_target = input("Enter new target amount: ")
 
         if new_name:
             category.name = new_name
@@ -203,8 +226,7 @@ class IncomeManager:
         category.save()
         print("Category edited successfully.")
 
-    def delete_income(self):
-        income_id = input("Enter the ID of the income to delete: ")
+    def delete_income(self, income_id):
         income = self.get_income(income_id)
         if not income:
             print("Income not found.")
@@ -213,8 +235,7 @@ class IncomeManager:
         income.delete()
         print("Income deleted successfully.")
 
-    def delete_category(self):
-        category_name = input("Enter the name of the category to delete: ")
+    def delete_category(self, category_name):
         category = self.get_category(category_name)
         if not category:
             print("Category not found.")
@@ -229,33 +250,3 @@ class IncomeManager:
 
         self.db.execute_query("DELETE FROM categories WHERE id = ?", (category.id,))
         print("Category deleted successfully.")
-
-    def input_income(self, account_manager) -> None:
-        try:
-            date_str = input("Enter income date (YYYY-MM-DD): ")
-            date = datetime.strptime(date_str, "%Y-%m-%d")
-            amount = float(input("Enter income amount: "))
-            description = input("Enter income description: ")
-            category_name = input("Enter category name: ")
-            account_name = input("Enter account name: ")
-
-            category = self.get_category(category_name)
-            if not category:
-                raise ValueError(f"Category '{category_name}' not found")
-
-            account = account_manager.get_account(account_name)
-            if not account:
-                raise ValueError(f"Account '{account_name}' not found")
-
-            income = Income.add_income(date, amount, description, category, account)
-            print("Income added successfully.")
-            return income
-        except ValueError as e:
-            print(f"Error: {str(e)}")
-            return None
-
-    def input_category(self) -> None:
-        name = input("Enter category name: ")
-        target = float(input("Enter target amount: "))
-        self.add_category(name, target)
-        print("Category added successfully.")

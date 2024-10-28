@@ -83,14 +83,11 @@ class AccountManager:
         for account in accounts:
             print(f"{account.name} - Balance: {account.balance:.2f} DA")
 
-    def edit_account(self) -> None:
-        name = input("Enter account name: ")
+    def edit_account(self, name, new_name, new_balance) -> None:
+
         account = self.get_account(name)
         if not account:
             raise ValueError(f"Account '{name}' not found")
-
-        new_name = input("Enter new account name: ")
-        new_balance = input("Enter new balance: ")
 
         if new_name:
             account.name = new_name
@@ -100,8 +97,8 @@ class AccountManager:
         account.save()
         print(f"Account '{name}' edited successfully.")
 
-    def delete_account(self) -> None:
-        name = input("Enter account name: ")
+    def delete_account(self, name) -> None:
+
         account = self.get_account(name)
         if not account:
             raise ValueError(f"Account '{name}' not found")
@@ -109,24 +106,16 @@ class AccountManager:
         self.db.execute_query("DELETE FROM accounts WHERE id = ?", (account.id,))
         print(f"Account '{name}' deleted successfully.")
 
-    def transfer_between_accounts(self) -> None:
-        from_account_name = input("Enter account to transfer from: ")
+    def transfer_between_accounts(
+        self, from_account_name, to_account_name, amount
+    ) -> None:
         from_account = self.get_account(from_account_name)
         if not from_account:
             raise ValueError(f"Account '{from_account_name}' not found")
-
-        to_account_name = input("Enter account to transfer to: ")
         to_account = self.get_account(to_account_name)
         if not to_account:
             raise ValueError(f"Account '{to_account_name}' not found")
-
-        amount = float(input("Enter amount to transfer: "))
         from_account.transfer(amount, to_account)
         print(
             f"{amount:.2f} DA transferred from '{from_account_name}' to '{to_account_name}'."
         )
-
-    def input_account(self) -> None:
-        name = input("Enter account name: ")
-        balance = float(input("Enter initial balance: "))
-        self.add_account(name, balance)

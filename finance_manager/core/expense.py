@@ -79,8 +79,34 @@ class ExpenseManager:
     def __init__(self):
         self.db = DatabaseConnection()
 
-    def add_expense(self, expense: Expense) -> None:
-        expense.save()
+    def add_expense(
+        self,
+        account_manager,
+        date_str,
+        amount,
+        description,
+        category_name,
+        account_name,
+    ):
+        try:
+            date = datetime.strptime(date_str, "%Y-%m-%d")
+            category = self.get_category(category_name)
+            if not category:
+                raise ValueError(f"Category '{category_name}' not found")
+
+            account = account_manager.get_account(account_name)
+            if not account:
+                raise ValueError(f"Account '{account_name}' not found")
+
+            expense = Expense.add_expense(date, amount, description, category, account)
+            if expense is not None:
+                print("Expense added successfully.")
+                return expense
+            else:
+                print("Failed to add expense.")
+        except ValueError as e:
+            print(f"Error: {str(e)}")
+            return None
 
     def add_category(self, name: str, budget: float) -> None:
         category = Category.get_by_name(name, "expense")
@@ -89,6 +115,7 @@ class ExpenseManager:
 
         category = Category(name=name, budget=budget, type="expense")
         category.save()
+        print("Category added successfully.")
 
     def get_expense(self, transaction_id: str) -> Optional[Expense]:
         transaction = Transaction.get_by_id(transaction_id)
@@ -97,7 +124,6 @@ class ExpenseManager:
 
         category = Category.get_by_id(transaction.category_id)
         account = Account.get_by_id(transaction.account_id)
-
         return Expense(transaction, category, account)
 
     def get_category(self, name: str) -> Optional[Category]:
@@ -177,17 +203,19 @@ class ExpenseManager:
         for category in categories:
             print(f"{category.name} (Budget: {category.budget:.2f} DA)")
 
-    def edit_expense(self):
-        expense_id = input("Enter the ID of the expense to edit: ")
+    def edit_expense(
+        self,
+        expense_id,
+        new_date_str,
+        new_amount_str,
+        new_description,
+        new_category_name,
+    ):
+
         expense = self.get_expense(expense_id)
         if not expense:
             print("Expense not found.")
             return
-
-        new_date_str = input("Enter new date (YYYY-MM-DD) or leave blank: ")
-        new_amount_str = input("Enter new amount or leave blank: ")
-        new_description = input("Enter new description or leave blank: ")
-        new_category_name = input("Enter new category name or leave blank: ")
 
         expense.account.deposit(expense.transaction.amount)
 
@@ -211,15 +239,11 @@ class ExpenseManager:
         else:
             print("Failed to edit expense.")
 
-    def edit_category(self):
-        category_name = input("Enter the name of the category to edit: ")
+    def edit_category(self, category_name, new_name, new_budget):
         category = self.get_category(category_name)
         if not category:
             print("Category not found.")
             return
-
-        new_name = input("Enter new category name: ")
-        new_budget = input("Enter new budget: ")
 
         if new_name:
             category.name = new_name
@@ -229,8 +253,7 @@ class ExpenseManager:
         category.save()
         print("Category edited successfully.")
 
-    def delete_expense(self):
-        expense_id = input("Enter the ID of the expense to delete: ")
+    def delete_expense(self, expense_id):
         expense = self.get_expense(expense_id)
         if not expense:
             print("Expense not found.")
@@ -239,8 +262,7 @@ class ExpenseManager:
         expense.delete()
         print("Expense deleted successfully.")
 
-    def delete_category(self):
-        category_name = input("Enter the name of the category to delete: ")
+    def delete_category(self, category_name):
         category = self.get_category(category_name)
         if not category:
             print("Category not found.")
@@ -255,36 +277,3 @@ class ExpenseManager:
 
         self.db.execute_query("DELETE FROM categories WHERE id = ?", (category.id,))
         print("Category deleted successfully.")
-
-    def input_expense(self, account_manager) -> None:
-        try:
-            date_str = input("Enter expense date (YYYY-MM-DD): ")
-            date = datetime.strptime(date_str, "%Y-%m-%d")
-            amount = float(input("Enter expense amount: "))
-            description = input("Enter expense description: ")
-            category_name = input("Enter category name: ")
-            account_name = input("Enter account name: ")
-
-            category = self.get_category(category_name)
-            if not category:
-                raise ValueError(f"Category '{category_name}' not found")
-
-            account = account_manager.get_account(account_name)
-            if not account:
-                raise ValueError(f"Account '{account_name}' not found")
-
-            expense = Expense.add_expense(date, amount, description, category, account)
-            if expense is not None:
-                print("Expense added successfully.")
-                return expense
-            else:
-                print("Failed to add expense.")
-        except ValueError as e:
-            print(f"Error: {str(e)}")
-            return None
-
-    def input_category(self) -> None:
-        name = input("Enter category name: ")
-        budget = float(input("Enter category budget: "))
-        self.add_category(name, budget)
-        print("Category added successfully.")
