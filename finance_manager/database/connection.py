@@ -1,6 +1,10 @@
-import sqlite3
+# finance_manager/database/connection.py
 import os
-from pathlib import Path
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
 
 
 class DatabaseConnection:
@@ -13,51 +17,23 @@ class DatabaseConnection:
         return cls._instance
 
     def initialize(self):
+        # Create the appdata directory if it doesn't exist
         appdata_path = os.path.join(os.getenv("APPDATA"), "finance_manager")
         if not os.path.exists(appdata_path):
             os.makedirs(appdata_path)
 
         self.db_path = os.path.join(appdata_path, "finance_manager.db")
+        self.engine = create_engine(f"sqlite:///{self.db_path}", echo=False)
 
-        if not os.path.exists(self.db_path):
-            from .models import init_database
+        # Create session factory
+        session_factory = sessionmaker(bind=self.engine)
+        self.Session = scoped_session(session_factory)
 
-            init_database(self.db_path)
+    def create_tables(self):
+        Base.metadata.create_all(self.engine)
 
-    def get_connection(self):
-        return sqlite3.connect(self.db_path)
+    def get_session(self):
+        return self.Session()
 
-    def execute_query(self, query, parameters=None):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            if parameters:
-                cursor.execute(query, parameters)
-            else:
-                cursor.execute(query)
-            conn.commit()
-            return cursor
-
-    def execute_many(self, query, parameters):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.executemany(query, parameters)
-            conn.commit()
-            return cursor
-
-    def fetch_one(self, query, parameters=None):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            if parameters:
-                cursor.execute(query, parameters)
-            else:
-                cursor.execute(query)
-            return cursor.fetchone()
-
-    def fetch_all(self, query, parameters=None):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            if parameters:
-                cursor.execute(query, parameters)
-            else:
-                cursor.execute(query)
-            return cursor.fetchall()
+    def close_session(self):
+        self.Session.remove()

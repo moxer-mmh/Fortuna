@@ -1,9 +1,13 @@
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
+from sqlalchemy.orm import Session
+from ..database import Transaction as TransactionModel
+from ..database import Category as CategoryModel
+from ..database import Account as AccountModel
+from ..database import DatabaseConnection
 from .transaction import Transaction
 from .category import Category
 from .account import Account
-from ..database import DatabaseConnection
 
 
 class Expense:
@@ -18,31 +22,76 @@ class Expense:
         self.transaction = transaction
         self.category = category
         self.account = account
-        self.db = DatabaseConnection()
+        self._db = DatabaseConnection()
 
         self.transaction.type = "expense"
         self.transaction.category_id = category.id
 
-    def save(self):
+    def save(self) -> bool:
+        with self._db.get_session() as session:
+            if not self._validate_category_budget(session):
+                print(
+                    f"Budget limit reached for category: {self.category.name} this month"
+                )
+                print("Do you want to continue?")
+                if input("y/n: ").lower() != "y":
+                    return False
+
+            try:
+                # Begin transaction
+                self.transaction.save()
+
+                # Update account balance
+                db_account = (
+                    session.query(AccountModel).filter_by(id=self.account.id).first()
+                )
+                if not db_account:
+                    raise ValueError(f"Account with id {self.account.id} not found")
+
+                db_account.balance -= self.transaction.amount
+                session.commit()
+                return True
+
+            except Exception as e:
+                session.rollback()
+                print(f"Error saving expense: {str(e)}")
+                return False
+
+    def delete(self) -> None:
+        with self._db.get_session() as session:
+            try:
+                # Begin transaction
+                db_transaction = (
+                    session.query(TransactionModel)
+                    .filter_by(id=self.transaction.id)
+                    .first()
+                )
+                if not db_transaction:
+                    raise ValueError(
+                        f"Transaction with id {self.transaction.id} not found"
+                    )
+
+                # Update account balance
+                db_account = (
+                    session.query(AccountModel).filter_by(id=self.account.id).first()
+                )
+                if not db_account:
+                    raise ValueError(f"Account with id {self.account.id} not found")
+
+                db_account.balance += db_transaction.amount
+                session.delete(db_transaction)
+                session.commit()
+
+            except Exception as e:
+                session.rollback()
+                print(f"Error deleting expense: {str(e)}")
+
+    def _validate_category_budget(self, session: Session) -> bool:
         if not self.category.can_add_transaction(
             self.transaction.amount, self.transaction.date
         ):
-            print(f"Budget limit reached for category: {self.category.name} this month")
-            print("Do you want to continue?")
-            if input("y/n: ").lower() != "y":
-                return 0
-            else:
-                self.transaction.save()
-                self.account.withdraw(self.transaction.amount)
-                return 1
-        else:
-            self.transaction.save()
-            self.account.withdraw(self.transaction.amount)
-            return 1
-
-    def delete(self) -> None:
-        self.account.deposit(self.transaction.amount)
-        self.transaction.delete()
+            return False
+        return True
 
     @classmethod
     def add_expense(
@@ -52,7 +101,7 @@ class Expense:
         description: str,
         category: Category,
         account: Account,
-    ) -> "Expense":
+    ) -> Optional["Expense"]:
         transaction = Transaction(
             date=date,
             amount=amount,
@@ -62,13 +111,83 @@ class Expense:
             type="expense",
         )
         expense = cls(transaction, category, account)
-        state = expense.save()
-        if state == 1:
+        if expense.save():
             return expense
-        else:
-            return None
+        return None
 
-    def __str__(self):
+    @classmethod
+    def get_by_id(cls, transaction_id: str) -> Optional["Expense"]:
+        db = DatabaseConnection()
+        with db.get_session() as session:
+            db_transaction = (
+                session.query(TransactionModel)
+                .filter_by(id=transaction_id, type="expense")
+                .first()
+            )
+
+            if not db_transaction:
+                return None
+
+            db_category = (
+                session.query(CategoryModel)
+                .filter_by(id=db_transaction.category_id)
+                .first()
+            )
+            db_account = (
+                session.query(AccountModel)
+                .filter_by(id=db_transaction.account_id)
+                .first()
+            )
+
+            if not db_category or not db_account:
+                return None
+
+            transaction = Transaction.from_orm(db_transaction)
+            category = Category.from_orm(db_category)
+            account = Account.from_orm(db_account)
+
+            return cls(transaction, category, account)
+
+    @classmethod
+    def get_all_expenses(cls) -> List["Expense"]:
+        db = DatabaseConnection()
+        expenses = []
+
+        with db.get_session() as session:
+            db_transactions = (
+                session.query(TransactionModel).filter_by(type="expense").all()
+            )
+
+            for db_transaction in db_transactions:
+                try:
+                    db_category = (
+                        session.query(CategoryModel)
+                        .filter_by(id=db_transaction.category_id)
+                        .first()
+                    )
+                    db_account = (
+                        session.query(AccountModel)
+                        .filter_by(id=db_transaction.account_id)
+                        .first()
+                    )
+
+                    if not db_category or not db_account:
+                        continue
+
+                    transaction = Transaction.from_orm(db_transaction)
+                    category = Category.from_orm(db_category)
+                    account = Account.from_orm(db_account)
+
+                    expense = cls(transaction, category, account)
+                    expenses.append(expense)
+
+                except Exception as e:
+                    print(f"Error processing transaction {db_transaction.id}: {str(e)}")
+                    continue
+
+        return expenses
+
+    def __str__(self) -> str:
         return (
             f"Expense: {self.transaction} - Description: {self.transaction.description} "
             f"- Category: {self.category.name} - Account: {self.account.name}"
@@ -77,107 +196,92 @@ class Expense:
 
 class ExpenseManager:
     def __init__(self):
-        self.db = DatabaseConnection()
+        self._db = DatabaseConnection()
 
     def add_expense(
         self,
         account_manager,
-        date_str,
-        amount,
-        description,
-        category_name,
-        account_name,
-    ):
-        try:
-            date = datetime.strptime(date_str, "%Y-%m-%d")
-            category = self.get_category(category_name)
-            if not category:
-                raise ValueError(f"Category '{category_name}' not found")
+        date_str: str,
+        amount: float,
+        description: str,
+        category_name: str,
+        account_name: str,
+    ) -> Optional[Expense]:
+        with self._db.get_session() as session:
+            try:
+                date = datetime.strptime(date_str, "%Y-%m-%d")
 
-            account = account_manager.get_account(account_name)
-            if not account:
-                raise ValueError(f"Account '{account_name}' not found")
+                # Get category
+                db_category = (
+                    session.query(CategoryModel)
+                    .filter_by(name=category_name, type="expense")
+                    .first()
+                )
+                if not db_category:
+                    raise ValueError(f"Category '{category_name}' not found")
+                category = Category.from_orm(db_category)
 
-            expense = Expense.add_expense(date, amount, description, category, account)
-            if expense is not None:
-                print("Expense added successfully.")
-                return expense
-            else:
-                print("Failed to add expense.")
-        except ValueError as e:
-            print(f"Error: {str(e)}")
-            return None
+                # Get account
+                account = account_manager.get_account(account_name)
+                if not account:
+                    raise ValueError(f"Account '{account_name}' not found")
+
+                expense = Expense.add_expense(
+                    date, amount, description, category, account
+                )
+                if expense:
+                    print("Expense added successfully.")
+                    return expense
+                else:
+                    print("Failed to add expense.")
+                    return None
+
+            except ValueError as e:
+                print(f"Error: {str(e)}")
+                return None
+            except Exception as e:
+                print(f"Unexpected error: {str(e)}")
+                return None
 
     def add_category(self, name: str, budget: float) -> None:
-        category = Category.get_by_name(name, "expense")
-        if category:
-            raise ValueError(f"Category '{name}' already exists")
-
-        category = Category(name=name, budget=budget, type="expense")
-        category.save()
-        print("Category added successfully.")
-
-    def get_expense(self, transaction_id: str) -> Optional[Expense]:
-        transaction = Transaction.get_by_id(transaction_id)
-        if not transaction or transaction.type != "expense":
-            return None
-
-        category = Category.get_by_id(transaction.category_id)
-        account = Account.get_by_id(transaction.account_id)
-        return Expense(transaction, category, account)
-
-    def get_category(self, name: str) -> Optional[Category]:
-        return Category.get_by_name(name, "expense")
-
-    def get_all_categories(self) -> List[Category]:
-        results = self.db.fetch_all(
-            "SELECT id, name, budget, type FROM categories WHERE type = 'expense'"
-        )
-        return [
-            Category(name=row[1], budget=row[2], type=row[3], id=row[0])
-            for row in results
-        ]
-
-    def get_all_expenses(self) -> List[Expense]:
-        expenses = []
-        results = self.db.fetch_all(
-            "SELECT id, date, amount, description, account_id, category_id FROM transactions WHERE type = 'expense'"
-        )
-
-        for row in results:
+        with self._db.get_session() as session:
             try:
-                transaction = Transaction(
-                    date=row[1],
-                    amount=row[2],
-                    description=row[3],
-                    account_id=row[4],
-                    category_id=row[5],
-                    type="expense",
-                    id=row[0],
+                # Check if category already exists
+                existing_category = (
+                    session.query(CategoryModel)
+                    .filter_by(name=name, type="expense")
+                    .first()
                 )
+                if existing_category:
+                    raise ValueError(f"Category '{name}' already exists")
 
-                category = Category.get_by_id(transaction.category_id)
-                if not category:
-                    print(
-                        f"Warning: Category not found for transaction {transaction.id}"
-                    )
-                    continue
-
-                account = Account.get_by_id(transaction.account_id)
-                if not account:
-                    print(
-                        f"Warning: Account not found for transaction {transaction.id}"
-                    )
-                    continue
-
-                expense = Expense(transaction, category, account)
-                expenses.append(expense)
+                # Create new category
+                category = Category(name=name, budget=budget, type="expense")
+                category.save()
+                print("Category added successfully.")
 
             except Exception as e:
-                print(f"Error processing transaction {row[0]}: {str(e)}")
-                continue
+                print(f"Error adding category: {str(e)}")
 
-        return expenses
+    def get_expense(self, transaction_id: str) -> Optional[Expense]:
+        return Expense.get_by_id(transaction_id)
+
+    def get_category(self, name: str) -> Optional[Category]:
+        with self._db.get_session() as session:
+            db_category = (
+                session.query(CategoryModel)
+                .filter_by(name=name, type="expense")
+                .first()
+            )
+            return Category.from_orm(db_category) if db_category else None
+
+    def get_all_categories(self) -> List[Category]:
+        with self._db.get_session() as session:
+            db_categories = session.query(CategoryModel).filter_by(type="expense").all()
+            return [Category.from_orm(cat) for cat in db_categories]
+
+    def get_all_expenses(self) -> List[Expense]:
+        return Expense.get_all_expenses()
 
     def display_expenses(self) -> None:
         try:
@@ -205,55 +309,83 @@ class ExpenseManager:
 
     def edit_expense(
         self,
-        expense_id,
-        new_date_str,
-        new_amount_str,
-        new_description,
-        new_category_name,
-    ):
+        expense_id: str,
+        new_date_str: Optional[str],
+        new_amount_str: Optional[str],
+        new_description: Optional[str],
+        new_category_name: Optional[str],
+    ) -> None:
+        with self._db.get_session() as session:
+            try:
+                expense = self.get_expense(expense_id)
+                if not expense:
+                    print("Expense not found.")
+                    return
 
-        expense = self.get_expense(expense_id)
-        if not expense:
-            print("Expense not found.")
-            return
+                # Revert the account balance
+                db_account = (
+                    session.query(AccountModel).filter_by(id=expense.account.id).first()
+                )
+                if not db_account:
+                    raise ValueError("Account not found")
+                db_account.balance += expense.transaction.amount
 
-        expense.account.deposit(expense.transaction.amount)
+                # Update transaction details
+                if new_date_str:
+                    expense.transaction.date = datetime.strptime(
+                        new_date_str, "%Y-%m-%d"
+                    )
+                if new_amount_str:
+                    expense.transaction.amount = float(new_amount_str)
+                if new_description:
+                    expense.transaction.description = new_description
+                if new_category_name:
+                    new_category = self.get_category(new_category_name)
+                    if not new_category:
+                        print("Category not found.")
+                        session.rollback()
+                        return
+                    expense.category = new_category
+                    expense.transaction.category_id = new_category.id
 
-        if new_date_str:
-            expense.transaction.date = datetime.strptime(new_date_str, "%Y-%m-%d")
-        if new_amount_str:
-            expense.transaction.amount = float(new_amount_str)
-        if new_description:
-            expense.transaction.description = new_description
-        if new_category_name:
-            new_category = self.get_category(new_category_name)
-            if not new_category:
-                print("Category not found.")
-                return
-            expense.category = new_category
-            expense.transaction.category_id = new_category.id
+                # Save changes
+                if expense.save():
+                    print("Expense edited successfully.")
+                else:
+                    print("Failed to edit expense.")
+                    session.rollback()
 
-        state = expense.save()
-        if state == 1:
-            print("Expense edited successfully.")
-        else:
-            print("Failed to edit expense.")
+            except Exception as e:
+                session.rollback()
+                print(f"Error editing expense: {str(e)}")
 
-    def edit_category(self, category_name, new_name, new_budget):
-        category = self.get_category(category_name)
-        if not category:
-            print("Category not found.")
-            return
+    def edit_category(
+        self, category_name: str, new_name: Optional[str], new_budget: Optional[float]
+    ) -> None:
+        with self._db.get_session() as session:
+            try:
+                db_category = (
+                    session.query(CategoryModel)
+                    .filter_by(name=category_name, type="expense")
+                    .first()
+                )
+                if not db_category:
+                    print("Category not found.")
+                    return
 
-        if new_name:
-            category.name = new_name
-        if new_budget:
-            category.budget = float(new_budget)
+                if new_name:
+                    db_category.name = new_name
+                if new_budget is not None:
+                    db_category.budget = new_budget
 
-        category.save()
-        print("Category edited successfully.")
+                session.commit()
+                print("Category edited successfully.")
 
-    def delete_expense(self, expense_id):
+            except Exception as e:
+                session.rollback()
+                print(f"Error editing category: {str(e)}")
+
+    def delete_expense(self, expense_id: str) -> None:
         expense = self.get_expense(expense_id)
         if not expense:
             print("Expense not found.")
@@ -262,18 +394,42 @@ class ExpenseManager:
         expense.delete()
         print("Expense deleted successfully.")
 
-    def delete_category(self, category_name):
-        category = self.get_category(category_name)
-        if not category:
-            print("Category not found.")
-            return
+    def delete_category(self, category_name: str) -> None:
+        with self._db.get_session() as session:
+            try:
+                # Get category
+                db_category = (
+                    session.query(CategoryModel)
+                    .filter_by(name=category_name, type="expense")
+                    .first()
+                )
+                if not db_category:
+                    print("Category not found.")
+                    return
 
-        expenses = [
-            exp for exp in self.get_all_expenses() if exp.category.id == category.id
-        ]
+                # Delete all associated expenses
+                db_transactions = (
+                    session.query(TransactionModel)
+                    .filter_by(category_id=db_category.id, type="expense")
+                    .all()
+                )
 
-        for expense in expenses:
-            expense.delete()
+                for db_transaction in db_transactions:
+                    # Update account balance
+                    db_account = (
+                        session.query(AccountModel)
+                        .filter_by(id=db_transaction.account_id)
+                        .first()
+                    )
+                    if db_account:
+                        db_account.balance += db_transaction.amount
+                    session.delete(db_transaction)
 
-        self.db.execute_query("DELETE FROM categories WHERE id = ?", (category.id,))
-        print("Category deleted successfully.")
+                # Delete category
+                session.delete(db_category)
+                session.commit()
+                print("Category deleted successfully.")
+
+            except Exception as e:
+                session.rollback()
+                print(f"Error deleting category: {str(e)}")

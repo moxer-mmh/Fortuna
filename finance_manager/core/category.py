@@ -1,6 +1,9 @@
-import uuid
 from typing import List, Optional, Tuple
 from datetime import datetime
+import uuid
+from sqlalchemy import extract, func
+from ..database import Category as CategoryModel
+from ..database import Transaction as TransactionModel
 from ..database import DatabaseConnection
 from .transaction import Transaction
 
@@ -11,48 +14,61 @@ class Category:
         self.name = name
         self.budget = budget
         self.type = type
-        self.db = DatabaseConnection()
+        self._db = DatabaseConnection()
 
-    def save(self):
-        self.db.execute_query(
-            "INSERT OR REPLACE INTO categories (id, name, budget, type) VALUES (?, ?, ?, ?)",
-            (self.id, self.name, self.budget, self.type),
+    @classmethod
+    def from_orm(cls, db_category: CategoryModel) -> "Category":
+        """Convert ORM model instance to Category domain object"""
+        return cls(
+            name=db_category.name,
+            budget=db_category.budget,
+            type=db_category.type,
+            id=db_category.id,
         )
+
+    def to_orm(self) -> CategoryModel:
+        """Convert Category domain object to ORM model instance"""
+        return CategoryModel(
+            id=self.id, name=self.name, budget=self.budget, type=self.type
+        )
+
+    def save(self) -> None:
+        with self._db.get_session() as session:
+            db_category = session.query(CategoryModel).filter_by(id=self.id).first()
+            if db_category:
+                db_category.name = self.name
+                db_category.budget = self.budget
+                db_category.type = self.type
+            else:
+                db_category = self.to_orm()
+                session.add(db_category)
+            session.commit()
 
     def get_transactions_for_month(self, year: int, month: int) -> List[Transaction]:
-        results = self.db.fetch_all(
-            """
-            SELECT id, date, amount, description, account_id
-            FROM transactions
-            WHERE category_id = ? 
-            AND strftime('%Y', date) = ? 
-            AND strftime('%m', date) = ?
-            """,
-            (self.id, str(year), str(month).zfill(2)),
-        )
-        return [
-            Transaction(
-                date=row[1],
-                amount=row[2],
-                description=row[3],
-                account_id=row[4],
-                id=row[0],
+        with self._db.get_session() as session:
+            db_transactions = (
+                session.query(TransactionModel)
+                .filter(
+                    TransactionModel.category_id == self.id,
+                    extract("year", TransactionModel.date) == year,
+                    extract("month", TransactionModel.date) == month,
+                )
+                .all()
             )
-            for row in results
-        ]
+            return [Transaction.from_orm(t) for t in db_transactions]
 
     def get_monthly_total(self, year: int, month: int) -> float:
-        result = self.db.fetch_one(
-            """
-            SELECT SUM(amount)
-            FROM transactions
-            WHERE category_id = ?
-            AND strftime('%Y', date) = ?
-            AND strftime('%m', date) = ?
-            """,
-            (self.id, str(year), str(month).zfill(2)),
-        )
-        return result[0] or 0.0
+        with self._db.get_session() as session:
+            result = (
+                session.query(func.sum(TransactionModel.amount))
+                .filter(
+                    TransactionModel.category_id == self.id,
+                    extract("year", TransactionModel.date) == year,
+                    extract("month", TransactionModel.date) == month,
+                )
+                .scalar()
+            )
+            return float(result or 0.0)
 
     def get_monthly_status(self, year: int, month: int) -> Tuple[float, float, float]:
         monthly_total = self.get_monthly_total(year, month)
@@ -62,7 +78,7 @@ class Category:
             percentage = (monthly_total / self.budget * 100) if self.budget > 0 else 0
             return monthly_total, remaining, percentage
         else:  # income
-            remaining_to_target = self.budget - monthly_total  # budget acts as target
+            remaining_to_target = self.budget - monthly_total
             percentage = (monthly_total / self.budget * 100) if self.budget > 0 else 0
             return monthly_total, remaining_to_target, percentage
 
@@ -75,51 +91,38 @@ class Category:
         return (current_total + amount) <= self.budget
 
     def get_transactions_from_category(self) -> List[Transaction]:
-        results = self.db.fetch_all(
-            """
-            SELECT id, date, amount, description, account_id
-            FROM transactions
-            WHERE category_id = ?
-            """,
-            (self.id,),
-        )
-        return [
-            Transaction(
-                date=row[1],
-                amount=row[2],
-                description=row[3],
-                account_id=row[4],
-                id=row[0],
+        with self._db.get_session() as session:
+            db_transactions = (
+                session.query(TransactionModel)
+                .filter(TransactionModel.category_id == self.id)
+                .all()
             )
-            for row in results
-        ]
+            return [Transaction.from_orm(t) for t in db_transactions]
 
     def get_total_transactions_in_category(self) -> float:
-        result = self.db.fetch_one(
-            "SELECT SUM(amount) FROM transactions WHERE category_id = ?", (self.id,)
-        )
-        return result[0] or 0.0
+        with self._db.get_session() as session:
+            result = (
+                session.query(func.sum(TransactionModel.amount))
+                .filter(TransactionModel.category_id == self.id)
+                .scalar()
+            )
+            return float(result or 0.0)
 
     @classmethod
     def get_by_id(cls, id: str) -> Optional["Category"]:
         db = DatabaseConnection()
-        result = db.fetch_one(
-            "SELECT id, name, budget, type FROM categories WHERE id = ?", (id,)
-        )
-        if result:
-            return cls(name=result[1], budget=result[2], type=result[3], id=result[0])
-        return None
+        with db.get_session() as session:
+            db_category = session.query(CategoryModel).filter_by(id=id).first()
+            return cls.from_orm(db_category) if db_category else None
 
     @classmethod
     def get_by_name(cls, name: str, type: str) -> Optional["Category"]:
         db = DatabaseConnection()
-        result = db.fetch_one(
-            "SELECT id, name, budget, type FROM categories WHERE name = ? AND type = ?",
-            (name, type),
-        )
-        if result:
-            return cls(name=result[1], budget=result[2], type=result[3], id=result[0])
-        return None
+        with db.get_session() as session:
+            db_category = (
+                session.query(CategoryModel).filter_by(name=name, type=type).first()
+            )
+            return cls.from_orm(db_category) if db_category else None
 
     def __str__(self) -> str:
         budget_type = "Budget" if self.type == "expense" else "Target"

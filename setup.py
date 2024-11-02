@@ -8,6 +8,7 @@ setup(
         "numpy",
         "pandas",
         "matplotlib",
+        "sqlalchemy"
     ],
     extras_require={
         "dev": [
