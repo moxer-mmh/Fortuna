@@ -1,0 +1,92 @@
+here is the new repo tree
+fortuna
+├── .dist
+├── .github
+│   └── workflows
+│       └── ci.yml
+├── .gitignore
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── LICENSE
+├── README.md
+├── backend
+│   ├── .dockerignore
+│   ├── Dockerfile
+│   ├── README.md
+│   ├── alembic
+│   │   ├── env.py
+│   │   └── versions
+│   ├── app
+│   │   ├── api
+│   │   │   ├── api.py
+│   │   │   └── v1
+│   │   │       ├── REST
+│   │   │       │   ├── accounts.py
+│   │   │       │   ├── auth.py
+│   │   │       │   ├── categories.py
+│   │   │       │   ├── subscriptions.py
+│   │   │       │   └── transactions.py
+│   │   │       └── graphql
+│   │   │           └── schema.py
+│   │   ├── core
+│   │   │   ├── config.py
+│   │   │   ├── exceptions.py
+│   │   │   └── security.py
+│   │   ├── db
+│   │   │   ├── __init__.py
+│   │   │   ├── init_db.py
+│   │   │   ├── models
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── account.py
+│   │   │   │   ├── category.py
+│   │   │   │   ├── subscription.py
+│   │   │   │   ├── transaction.py
+│   │   │   │   └── user.py
+│   │   │   └── session.py
+│   │   ├── main.py
+│   │   ├── schemas
+│   │   │   ├── account.py
+│   │   │   ├── category.py
+│   │   │   ├── subscription.py
+│   │   │   ├── transaction.py
+│   │   │   └── user.py
+│   │   ├── services
+│   │   │   ├── __init__.py
+│   │   │   ├── account_service.py
+│   │   │   ├── category_service.py
+│   │   │   ├── expense_service.py
+│   │   │   ├── income_service.py
+│   │   │   ├── subscription_service.py
+│   │   │   └── transaction_service.py
+│   │   └── utils
+│   │       ├── background_tasks.py
+│   │       └── cache.py
+│   ├── requirements.txt
+│   └── tests
+│       ├── integration
+│       └── unit
+├── docker-compose.yaml
+├── docs
+│   ├── README.md
+│   ├── api_documentation.md
+│   ├── architecture.md
+│   ├── developer_guide.md
+│   └── user_guide.md
+├── frontend
+│   ├── cli
+│   ├── desktop
+│   ├── mobile
+│   └── web
+├── k8s
+│   ├── deployment.yaml
+│   └── service.yaml
+└── scripts
+    ├── script.py
+    └── text.txt
+
+
+
+
+also here is the files that i move all the other files are empty only those that have codes and i know that they are not correct so i need you to transform my codes into the correct way
+
+
