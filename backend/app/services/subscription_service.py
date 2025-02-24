@@ -1,11 +1,11 @@
 #fortuna/backend/app/services/subscription_service.py
 from datetime import datetime, timedelta
 from typing import List, Optional
-from ..db import Transaction as TransactionModel
-from ..db import Category as CategoryModel
-from ..db import Account as AccountModel
-from ..db import Subscription as SubscriptionModel
-from ..db import DatabaseConnection
+from db import Transaction as TransactionModel
+from db import Category as CategoryModel
+from db import Account as AccountModel
+from db import Subscription as SubscriptionModel
+from db import DatabaseConnection
 from .transaction_service import Transaction
 from .category_service import Category
 from .account_service import Account

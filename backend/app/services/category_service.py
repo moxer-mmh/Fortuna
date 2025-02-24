@@ -3,9 +3,9 @@ from typing import List, Optional, Tuple
 from datetime import datetime
 import uuid
 from sqlalchemy import extract, func
-from ..db import Category as CategoryModel
-from ..db import Transaction as TransactionModel
-from ..db import DatabaseConnection
+from db import Category as CategoryModel
+from db import Transaction as TransactionModel
+from db import DatabaseConnection
 from .transaction_service import Transaction
 
 

@@ -2,10 +2,10 @@
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from ..db import Transaction as TransactionModel
-from ..db import Category as CategoryModel
-from ..db import Account as AccountModel
-from ..db import DatabaseConnection
+from db import Transaction as TransactionModel
+from db import Category as CategoryModel
+from db import Account as AccountModel
+from db import DatabaseConnection
 from .transaction_service import Transaction
 from .category_service import Category
 from .account_service import Account

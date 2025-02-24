@@ -1,5 +1,5 @@
 #fortuna/backend/app/main.py
-from .services import ExpenseManager, IncomeManager, AccountManager, SubscriptionManager
+from services import ExpenseManager, IncomeManager, AccountManager, SubscriptionManager
 import sys
 
 

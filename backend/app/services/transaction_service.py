@@ -2,8 +2,8 @@
 from datetime import datetime
 from typing import Optional
 import uuid
-from ..db import Transaction as TransactionModel
-from ..db import DatabaseConnection
+from db import Transaction as TransactionModel
+from db import DatabaseConnection
 
 
 class Transaction:

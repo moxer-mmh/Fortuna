@@ -3,8 +3,8 @@ from typing import List, Optional
 import uuid
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from ..db import Account as AccountModel
-from ..db import DatabaseConnection
+from db import Account as AccountModel
+from db import DatabaseConnection
 
 
 class Account:
