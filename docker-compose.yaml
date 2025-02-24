@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  backend:
+    build: ./backend
+    container_name: backend_c
+    ports:
+      - "8000:8000"
+    volumes:
+      - .backend:/app
+    environment:
+      - ENV=production
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
