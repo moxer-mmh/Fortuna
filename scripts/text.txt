@@ -1,16 +1,14 @@
-here is the new repo tree
-fortuna
 ├── .dist
 ├── .github
 │   └── workflows
 │       └── ci.yml
-├── .gitignore
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── LICENSE
 ├── README.md
 ├── backend
 │   ├── .dockerignore
+│   ├── .gitignore
 │   ├── Dockerfile
 │   ├── README.md
 │   ├── alembic
@@ -83,10 +81,3 @@ fortuna
 └── scripts
     ├── script.py
     └── text.txt
-
-
-
-
-also here is the files that i move all the other files are empty only those that have codes and i know that they are not correct so i need you to transform my codes into the correct way
-
-
