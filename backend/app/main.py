@@ -1,7 +1,7 @@
 # fortuna/backend/app/main.py
 from datetime import datetime
 import sys
-from db.session import DatabaseConnection
+from db import DatabaseConnection
 from services import (
     ExpenseService,
     AccountService,
