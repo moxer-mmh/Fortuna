@@ -16,7 +16,7 @@ class TransactionService:
         self.db = db
 
     def create_transaction(self, transaction: TransactionCreate) -> Transaction:
-        db_transaction = TransactionModel(**transaction.dict())
+        db_transaction = TransactionModel(**transaction.model_dump())
         self.db.add(db_transaction)
         try:
             self.db.commit()
@@ -39,7 +39,7 @@ class TransactionService:
         db_transaction = self.get_transaction(transaction_id)
         if not db_transaction:
             raise HTTPException(status_code=404, detail="Transaction not found")
-        update_data = transaction.dict(exclude_unset=True)
+        update_data = transaction.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_transaction, key, value)
         self.db.commit()

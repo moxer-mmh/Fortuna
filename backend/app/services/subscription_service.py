@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from dataclasses import asdict
 from schemas import (
     SubscriptionCreate,
     SubscriptionUpdate,
@@ -47,7 +48,7 @@ class SubscriptionService:
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
 
-        subscription_dict = subscription_data.dict()
+        subscription_dict = asdict(subscription_data)
         subscription = SubscriptionModel(**subscription_dict)
         self.db.add(subscription)
         try:
@@ -76,7 +77,7 @@ class SubscriptionService:
         subscription = self.get_subscription(subscription_id)
         if not subscription:
             raise HTTPException(status_code=404, detail="Subscription not found")
-        update_data = subscription_data.dict(exclude_unset=True)
+        update_data = subscription_data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(subscription, key, value)
         try:

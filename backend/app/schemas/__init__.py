@@ -1,5 +1,5 @@
 # fortuna/backend/app/schemas/__init__.py
-from .account import Account, AccountCreate, AccountUpdate
+from .account import Account, AccountCreate, AccountUpdate, AccountTransfer
 from .category import Category, CategoryCreate, CategoryUpdate
 from .transaction import Transaction, TransactionCreate, TransactionUpdate
 from .expense import Expense, ExpenseCreate, ExpenseUpdate
@@ -10,6 +10,7 @@ __all__ = [
     "Account",
     "AccountCreate",
     "AccountUpdate",
+    "AccountTransfer",
     "Category",
     "CategoryCreate",
     "CategoryUpdate",

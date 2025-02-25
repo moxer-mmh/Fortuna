@@ -10,6 +10,22 @@ from services import (
     SubscriptionService,
 )
 
+from schemas import (
+    ExpenseCreate,
+    ExpenseUpdate,
+    IncomeCreate,
+    IncomeUpdate,
+    SubscriptionCreate,
+    SubscriptionUpdate,
+    AccountCreate,
+    AccountUpdate,
+    AccountTransfer,
+    CategoryCreate,
+    CategoryUpdate,
+    TransactionCreate,
+    TransactionUpdate,
+)
+
 
 # Helper functions to look up IDs by name
 def lookup_account_id(account_service: AccountService, name: str) -> str:
@@ -98,9 +114,6 @@ class FinanceManager:
                 if not cat_id:
                     print("Expense category not found")
                     continue
-                from schemas.expense import (
-                    ExpenseCreate,
-                )  # Adjust import path as needed
 
                 try:
                     expense_data = ExpenseCreate(
@@ -130,7 +143,6 @@ class FinanceManager:
                 if not cat_id:
                     print("Income category not found")
                     continue
-                from schemas.income import IncomeCreate
 
                 try:
                     income_data = IncomeCreate(
@@ -152,7 +164,6 @@ class FinanceManager:
                 new_category_name = input(
                     "Enter new expense category name or leave blank: "
                 )
-                from schemas.expense import ExpenseUpdate
 
                 update_fields = {}
                 if new_date_str:
@@ -184,7 +195,6 @@ class FinanceManager:
                 new_category_name = input(
                     "Enter new income category name or leave blank: "
                 )
-                from schemas.income import IncomeUpdate
 
                 update_fields = {}
                 if new_date_str:
@@ -263,7 +273,6 @@ class FinanceManager:
             if choice == "1":
                 name = input("Enter expense category name: ")
                 budget = float(input("Enter expense category budget: ") or 0)
-                from schemas.category import CategoryCreate
 
                 try:
                     cat = self.category_service.create_category(
@@ -275,7 +284,6 @@ class FinanceManager:
             elif choice == "2":
                 name = input("Enter income category name: ")
                 target = float(input("Enter income category target: ") or 0)
-                from schemas.category import CategoryCreate
 
                 try:
                     cat = self.category_service.create_category(
@@ -288,7 +296,6 @@ class FinanceManager:
                 category_id = input("Enter the ID of the expense category to edit: ")
                 new_name = input("Enter new expense category name or leave blank: ")
                 new_budget_str = input("Enter new budget or leave blank: ")
-                from schemas.category import CategoryUpdate
 
                 update_fields = {}
                 if new_name:
@@ -306,7 +313,6 @@ class FinanceManager:
                 category_id = input("Enter the ID of the income category to edit: ")
                 new_name = input("Enter new income category name or leave blank: ")
                 new_target_str = input("Enter new target or leave blank: ")
-                from schemas.category import CategoryUpdate
 
                 update_fields = {}
                 if new_name:
@@ -372,7 +378,6 @@ class FinanceManager:
             if choice == "1":
                 name = input("Enter account name: ")
                 balance = float(input("Enter initial balance: ") or 0)
-                from schemas.account import AccountCreate
 
                 try:
                     acc = self.account_service.create_account(
@@ -385,7 +390,6 @@ class FinanceManager:
                 account_id = input("Enter the ID of the account to edit: ")
                 new_name = input("Enter new account name or leave blank: ")
                 new_balance_str = input("Enter new balance or leave blank: ")
-                from schemas.account import AccountUpdate
 
                 update_fields = {}
                 if new_name:
@@ -410,15 +414,20 @@ class FinanceManager:
                 from_account_name = input("Enter account name to transfer from: ")
                 to_account_name = input("Enter account name to transfer to: ")
                 amount = float(input("Enter amount to transfer: ") or 0)
-                from_id = lookup_account_id(self.account_service, from_account_name)
-                to_id = lookup_account_id(self.account_service, to_account_name)
-                if not from_id or not to_id:
+                from_account_id = lookup_account_id(
+                    self.account_service, from_account_name
+                )
+                to_account_id = lookup_account_id(self.account_service, to_account_name)
+                if not from_account_id or not to_account_id:
                     print("One or both accounts not found.")
                 else:
                     try:
-                        self.account_service.transfer_between_accounts(
-                            from_id, to_id, amount
+                        transfer_data = AccountTransfer(
+                            from_account_id=from_account_id,
+                            to_account_id=to_account_id,
+                            amount=amount,
                         )
+                        self.account_service.transfer_between_accounts(transfer_data)
                         print("Transfer completed successfully.")
                     except Exception as e:
                         print("Error transferring funds:", e)
@@ -462,8 +471,6 @@ class FinanceManager:
                 if not acc_id or not cat_id:
                     print("Account or category not found.")
                     continue
-                from schemas.subscription import SubscriptionCreate
-
                 try:
                     sub = self.subscription_service.create_subscription(
                         SubscriptionCreate(
@@ -511,7 +518,6 @@ class FinanceManager:
                     .strip()
                     .lower()
                 )
-                from schemas.subscription import SubscriptionUpdate
 
                 update_fields = {}
                 if new_name:

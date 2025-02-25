@@ -13,7 +13,7 @@ class CategoryService:
         self.db = db
 
     def create_category(self, category: CategoryCreate) -> Category:
-        db_category = CategoryModel(**category.dict())
+        db_category = CategoryModel(**category.model_dump())
         self.db.add(db_category)
         try:
             self.db.commit()
@@ -44,7 +44,7 @@ class CategoryService:
         db_category = self.get_category_by_id(category_id)
         if not db_category:
             raise HTTPException(status_code=404, detail="Category not found")
-        update_data = category.dict(exclude_unset=True)
+        update_data = category.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_category, key, value)
         self.db.commit()
