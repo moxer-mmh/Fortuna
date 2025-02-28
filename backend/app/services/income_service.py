@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from dataclasses import asdict
 from schemas import IncomeCreate, IncomeUpdate, Income
 from db import (
     Transaction as TransactionModel,
@@ -40,7 +39,7 @@ class IncomeService:
             raise HTTPException(status_code=404, detail="Account not found")
 
         # Create the income transaction (set type to "income")
-        income_dict = asdict(income_data)
+        income_dict = income_data.model_dump(exclude_unset=True)
         income_dict["type"] = "income"
         transaction = TransactionModel(**income_dict)
         self.db.add(transaction)

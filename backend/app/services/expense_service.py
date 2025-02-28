@@ -4,7 +4,6 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from fastapi import HTTPException
-from dataclasses import asdict
 from schemas import ExpenseCreate, ExpenseUpdate, Expense
 from db import (
     Transaction as TransactionModel,
@@ -61,7 +60,7 @@ class ExpenseService:
             raise HTTPException(status_code=404, detail="Account not found")
 
         # Create the expense transaction with type "expense"
-        expense_dict = asdict(expense_data)
+        expense_dict = expense_data.model_dump(exclude_unset=True)
         expense_dict["type"] = "expense"
         transaction = TransactionModel(**expense_dict)
         self.db.add(transaction)
