@@ -70,6 +70,13 @@ class SubscriptionService:
     def get_all_subscriptions(self) -> List[Subscription]:
         return self.db.query(SubscriptionModel).all()
 
+    def get_subscription_transactions(self, subscription_id: str) -> List[Transaction]:
+        return (
+            self.db.query(TransactionModel)
+            .filter(TransactionModel.subscription_id == subscription_id)
+            .all()
+        )
+
     def update_subscription(
         self, subscription_id: str, subscription_data: SubscriptionUpdate
     ) -> Subscription:
@@ -89,12 +96,20 @@ class SubscriptionService:
         self.db.refresh(subscription)
         return subscription
 
-    def delete_subscription(self, subscription_id: str) -> None:
+    def delete_subscription(
+        self, subscription_id: str, delete_transactions: bool = False
+    ) -> None:
         subscription = self.get_subscription(subscription_id)
         if not subscription:
             raise HTTPException(status_code=404, detail="Subscription not found")
-        self.db.delete(subscription)
         try:
+            if delete_transactions:
+                # Delete all transactions linked to the subscription
+                self.db.query(TransactionModel).filter(
+                    TransactionModel.subscription_id == subscription_id
+                ).delete()
+            # Delete the subscription
+            self.db.delete(subscription)
             self.db.commit()
         except Exception as e:
             self.db.rollback()

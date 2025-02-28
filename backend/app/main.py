@@ -594,18 +594,24 @@ class FinanceManager:
                 except Exception as e:
                     print("Error updating subscription:", e)
             elif choice == "3":
-                subscription_id = input("Enter the ID of the subscription to delete: ")
+                subscription_id = input("Enter the ID of the subscription to delete: ").strip()
+                delete_transactions = input("Delete associated transactions? (y/n): ").strip().lower() == "y"
                 try:
-                    self.subscription_service.delete_subscription(subscription_id)
+                    self.subscription_service.delete_subscription(
+                        subscription_id,
+                        delete_transactions=delete_transactions
+                    )
                     print("Subscription deleted successfully.")
                 except Exception as e:
-                    print("Error deleting subscription:", e)
+                    print(f"Error: {e}")
             elif choice == "4":
                 processed = self.subscription_service.process_due_payments()
                 if processed:
                     print(f"\nProcessed {len(processed)} subscription payments:")
                     for transaction in processed:
-                        print(f"- {transaction}")
+                        print(
+                            f"- Transaction ID: {transaction.id}, Date: {transaction.date}"
+                        )
                 else:
                     print("\nNo subscription payments were due.")
             elif choice == "5":
@@ -626,11 +632,16 @@ class FinanceManager:
                     sub = self.subscription_service.get_subscription(subscription_id)
                     if sub:
                         print(f"\nTransactions for subscription {sub.name}:")
-                        # Assuming a method exists to fetch transactions for a subscription
-                        transactions = []  # Replace with actual fetch if available
+                        transactions = (
+                            self.subscription_service.get_subscription_transactions(
+                                subscription_id
+                            )
+                        )
                         if transactions:
                             for tx in transactions:
-                                print(f"  - {tx}")
+                                print(
+                                    f"  - ID: {tx.id}, Date: {tx.date}, Amount: {tx.amount}, Description: {tx.description}"
+                                )
                         else:
                             print("  No transactions found.")
                     else:
@@ -639,10 +650,16 @@ class FinanceManager:
                     subs = self.subscription_service.get_all_subscriptions()
                     for sub in subs:
                         print(f"\nTransactions for subscription {sub.name}:")
-                        transactions = []  # Replace with actual fetch if available
+                        transactions = (
+                            self.subscription_service.get_subscription_transactions(
+                                sub.id
+                            )
+                        )
                         if transactions:
                             for tx in transactions:
-                                print(f"  - {tx}")
+                                print(
+                                    f"  - ID: {tx.id}, Date: {tx.date}, Amount: {tx.amount}, Description: {tx.description}"
+                                )
                         else:
                             print("  No transactions found.")
             elif choice == "0":
