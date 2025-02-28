@@ -294,6 +294,10 @@ class FinanceManager:
                     print("Error adding income category:", e)
             elif choice == "3":
                 category_id = input("Enter the ID of the expense category to edit: ")
+                category = self.category_service.get_category_by_id(category_id)
+                if not category or category.type.lower() != "expense":
+                    print("Expense category not found.")
+                    continue
                 new_name = input("Enter new expense category name or leave blank: ")
                 new_budget_str = input("Enter new budget or leave blank: ")
 
@@ -311,6 +315,10 @@ class FinanceManager:
                     print("Error updating expense category:", e)
             elif choice == "4":
                 category_id = input("Enter the ID of the income category to edit: ")
+                category = self.category_service.get_category_by_id(category_id)
+                if not category or category.type.lower() != "income":
+                    print("Income category not found.")
+                    continue
                 new_name = input("Enter new income category name or leave blank: ")
                 new_target_str = input("Enter new target or leave blank: ")
 
@@ -328,6 +336,11 @@ class FinanceManager:
                     print("Error updating income category:", e)
             elif choice == "5":
                 category_id = input("Enter the ID of the expense category to delete: ")
+                category = self.category_service.get_category_by_id(category_id)
+
+                if not category or category.type.lower() != "expense":
+                    print("Income category not found.")
+                    continue
                 try:
                     self.category_service.delete_category(category_id)
                     print("Expense category deleted successfully.")
@@ -335,6 +348,11 @@ class FinanceManager:
                     print("Error deleting expense category:", e)
             elif choice == "6":
                 category_id = input("Enter the ID of the income category to delete: ")
+                category = self.category_service.get_category_by_id(category_id)
+
+                if not category or category.type.lower() != "income":
+                    print("Income category not found.")
+                    continue
                 try:
                     self.category_service.delete_category(category_id)
                     print("Income category deleted successfully.")
