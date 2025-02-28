@@ -158,6 +158,10 @@ class FinanceManager:
                     print("Error adding income:", e)
             elif choice == "3":
                 expense_id = input("Enter the ID of the expense to edit: ")
+                expense = self.expense_service.get_expense(expense_id)
+                if not expense:
+                    print("Expense not found.")
+                    continue
                 new_date_str = input("Enter new date (YYYY-MM-DD) or leave blank: ")
                 new_amount_str = input("Enter new amount or leave blank: ")
                 new_description = input("Enter new description or leave blank: ")
@@ -189,6 +193,10 @@ class FinanceManager:
                     print("Error updating expense:", e)
             elif choice == "4":
                 income_id = input("Enter the ID of the income to edit: ")
+                income = self.income_service.get_income(income_id)
+                if not income:
+                    print("Income not found.")
+                    continue
                 new_date_str = input("Enter new date (YYYY-MM-DD) or leave blank: ")
                 new_amount_str = input("Enter new amount or leave blank: ")
                 new_description = input("Enter new description or leave blank: ")
@@ -220,6 +228,10 @@ class FinanceManager:
                     print("Error updating income:", e)
             elif choice == "5":
                 expense_id = input("Enter the ID of the expense to delete: ")
+                expense = self.expense_service.get_expense(expense_id)
+                if not expense:
+                    print("Expense not found.")
+                    continue
                 try:
                     self.expense_service.delete_expense(expense_id)
                     print("Expense deleted successfully.")
@@ -227,6 +239,10 @@ class FinanceManager:
                     print("Error deleting expense:", e)
             elif choice == "6":
                 income_id = input("Enter the ID of the income to delete: ")
+                income = self.income_service.get_income(income_id)
+                if not income:
+                    print("Income not found.")
+                    continue
                 try:
                     self.income_service.delete_income(income_id)
                     print("Income deleted successfully.")
