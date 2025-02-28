@@ -1,14 +1,59 @@
-#fortuna/backend/app/main.py
-from services import ExpenseManager, IncomeManager, AccountManager, SubscriptionManager
+# fortuna/backend/app/main.py
+from datetime import datetime
 import sys
+from db import DatabaseConnection
+from services import (
+    ExpenseService,
+    AccountService,
+    CategoryService,
+    IncomeService,
+    SubscriptionService,
+)
+
+from schemas import (
+    ExpenseCreate,
+    ExpenseUpdate,
+    IncomeCreate,
+    IncomeUpdate,
+    SubscriptionCreate,
+    SubscriptionUpdate,
+    AccountCreate,
+    AccountUpdate,
+    AccountTransfer,
+    CategoryCreate,
+    CategoryUpdate,
+    TransactionCreate,
+    TransactionUpdate,
+)
+
+
+# Helper functions to look up IDs by name
+def lookup_account_id(account_service: AccountService, name: str) -> str:
+    accounts = account_service.get_all_accounts()
+    for acc in accounts:
+        if acc.name.lower() == name.lower():
+            return acc.id
+    return None
+
+
+def lookup_category_id(category_service: CategoryService, name: str, type_: str) -> str:
+    categories = category_service.get_all_categories()
+    for cat in categories:
+        if cat.name.lower() == name.lower() and cat.type.lower() == type_.lower():
+            return cat.id
+    return None
 
 
 class FinanceManager:
     def __init__(self):
-        self.expense_manager = ExpenseManager()
-        self.income_manager = IncomeManager()
-        self.account_manager = AccountManager()
-        self.subscription_manager = SubscriptionManager()
+        # Create a shared DB session
+        db = DatabaseConnection().get_session()
+        self.db = db
+        self.account_service = AccountService(db)
+        self.expense_service = ExpenseService(db)
+        self.income_service = IncomeService(db)
+        self.subscription_service = SubscriptionService(db)
+        self.category_service = CategoryService(db)
 
     def run(self):
         while True:
@@ -22,8 +67,6 @@ class FinanceManager:
         print("2. Manage Categories")
         print("3. Manage Accounts")
         print("4. Manage Subscriptions")
-        # print("5. Generate Reports")
-        # print("6. Settings")
         print("0. Exit")
 
     def process_main_choice(self, choice):
@@ -35,13 +78,9 @@ class FinanceManager:
             self.manage_accounts()
         elif choice == "4":
             self.manage_subscriptions()
-        # elif choice == "5":
-        #     self.generate_reports()
-        # elif choice == "6":
-        #     self.settings()
         elif choice == "0":
             print("Thank you for using Finance Manager. Goodbye!")
-            exit()
+            sys.exit(0)
         else:
             print("Invalid choice. Please try again.")
 
@@ -58,74 +97,177 @@ class FinanceManager:
             print("8. View Expense Transactions")
             print("9. View Income Transactions")
             print("0. Back to Main Menu")
-
             choice = input("Enter your choice: ")
             if choice == "1":
                 date_str = input("Enter expense date (YYYY-MM-DD): ")
                 amount = float(input("Enter expense amount: "))
                 description = input("Enter expense description: ")
-                category_name = input("Enter category name: ")
+                category_name = input("Enter expense category name: ")
                 account_name = input("Enter account name: ")
-                self.expense_manager.add_expense(
-                    self.account_manager,
-                    date_str,
-                    amount,
-                    description,
-                    category_name,
-                    account_name,
+                acc_id = lookup_account_id(self.account_service, account_name)
+                if not acc_id:
+                    print("Account not found")
+                    continue
+                cat_id = lookup_category_id(
+                    self.category_service, category_name, "expense"
                 )
+                if not cat_id:
+                    print("Expense category not found")
+                    continue
+
+                try:
+                    expense_data = ExpenseCreate(
+                        date=datetime.strptime(date_str, "%Y-%m-%d"),
+                        amount=amount,
+                        description=description,
+                        account_id=acc_id,
+                        category_id=cat_id,
+                    )
+                    expense = self.expense_service.create_expense(expense_data)
+                    print("Expense added successfully. ID:", expense.id)
+                except Exception as e:
+                    print("Error adding expense:", e)
             elif choice == "2":
                 date_str = input("Enter income date (YYYY-MM-DD): ")
                 amount = float(input("Enter income amount: "))
                 description = input("Enter income description: ")
-                category_name = input("Enter category name: ")
+                category_name = input("Enter income category name: ")
                 account_name = input("Enter account name: ")
-                self.income_manager.add_income(
-                    self.account_manager,
-                    date_str,
-                    amount,
-                    description,
-                    category_name,
-                    account_name,
+                acc_id = lookup_account_id(self.account_service, account_name)
+                if not acc_id:
+                    print("Account not found")
+                    continue
+                cat_id = lookup_category_id(
+                    self.category_service, category_name, "income"
                 )
+                if not cat_id:
+                    print("Income category not found")
+                    continue
+
+                try:
+                    income_data = IncomeCreate(
+                        date=datetime.strptime(date_str, "%Y-%m-%d"),
+                        amount=amount,
+                        description=description,
+                        account_id=acc_id,
+                        category_id=cat_id,
+                    )
+                    income = self.income_service.create_income(income_data)
+                    print("Income added successfully. ID:", income.id)
+                except Exception as e:
+                    print("Error adding income:", e)
             elif choice == "3":
                 expense_id = input("Enter the ID of the expense to edit: ")
+                expense = self.expense_service.get_expense(expense_id)
+                if not expense:
+                    print("Expense not found.")
+                    continue
                 new_date_str = input("Enter new date (YYYY-MM-DD) or leave blank: ")
                 new_amount_str = input("Enter new amount or leave blank: ")
                 new_description = input("Enter new description or leave blank: ")
-                new_category_name = input("Enter new category name or leave blank: ")
-                self.expense_manager.edit_expense(
-                    expense_id,
-                    new_date_str,
-                    new_amount_str,
-                    new_description,
-                    new_category_name,
+                new_category_name = input(
+                    "Enter new expense category name or leave blank: "
                 )
+
+                update_fields = {}
+                if new_date_str:
+                    update_fields["date"] = datetime.strptime(new_date_str, "%Y-%m-%d")
+                if new_amount_str:
+                    update_fields["amount"] = float(new_amount_str)
+                if new_description:
+                    update_fields["description"] = new_description
+                if new_category_name:
+                    cat_id = lookup_category_id(
+                        self.category_service, new_category_name, "expense"
+                    )
+                    if not cat_id:
+                        print("Expense category not found")
+                        continue
+                    update_fields["category_id"] = cat_id
+                try:
+                    expense = self.expense_service.update_expense(
+                        expense_id, ExpenseUpdate(**update_fields)
+                    )
+                    print("Expense updated successfully. ID:", expense.id)
+                except Exception as e:
+                    print("Error updating expense:", e)
             elif choice == "4":
                 income_id = input("Enter the ID of the income to edit: ")
+                income = self.income_service.get_income(income_id)
+                if not income:
+                    print("Income not found.")
+                    continue
                 new_date_str = input("Enter new date (YYYY-MM-DD) or leave blank: ")
                 new_amount_str = input("Enter new amount or leave blank: ")
                 new_description = input("Enter new description or leave blank: ")
-                new_category_name = input("Enter new category name or leave blank: ")
-                self.income_manager.edit_income(
-                    income_id,
-                    new_date_str,
-                    new_amount_str,
-                    new_description,
-                    new_category_name,
+                new_category_name = input(
+                    "Enter new income category name or leave blank: "
                 )
+
+                update_fields = {}
+                if new_date_str:
+                    update_fields["date"] = datetime.strptime(new_date_str, "%Y-%m-%d")
+                if new_amount_str:
+                    update_fields["amount"] = float(new_amount_str)
+                if new_description:
+                    update_fields["description"] = new_description
+                if new_category_name:
+                    cat_id = lookup_category_id(
+                        self.category_service, new_category_name, "income"
+                    )
+                    if not cat_id:
+                        print("Income category not found")
+                        continue
+                    update_fields["category_id"] = cat_id
+                try:
+                    income = self.income_service.update_income(
+                        income_id, IncomeUpdate(**update_fields)
+                    )
+                    print("Income updated successfully. ID:", income.id)
+                except Exception as e:
+                    print("Error updating income:", e)
             elif choice == "5":
                 expense_id = input("Enter the ID of the expense to delete: ")
-                self.expense_manager.delete_expense(expense_id)
+                expense = self.expense_service.get_expense(expense_id)
+                if not expense:
+                    print("Expense not found.")
+                    continue
+                try:
+                    self.expense_service.delete_expense(expense_id)
+                    print("Expense deleted successfully.")
+                except Exception as e:
+                    print("Error deleting expense:", e)
             elif choice == "6":
                 income_id = input("Enter the ID of the income to delete: ")
-                self.income_manager.delete_income(income_id)
+                income = self.income_service.get_income(income_id)
+                if not income:
+                    print("Income not found.")
+                    continue
+                try:
+                    self.income_service.delete_income(income_id)
+                    print("Income deleted successfully.")
+                except Exception as e:
+                    print("Error deleting income:", e)
             elif choice == "7":
                 self.move_transaction()
             elif choice == "8":
-                self.expense_manager.display_expenses()
+                expenses = self.expense_service.get_all_expenses()
+                if expenses:
+                    for exp in expenses:
+                        print(
+                            f"ID: {exp.id}, Date: {exp.date}, Amount: {exp.amount}, Description: {exp.description}"
+                        )
+                else:
+                    print("No expenses found.")
             elif choice == "9":
-                self.income_manager.display_incomes()
+                incomes = self.income_service.get_all_incomes()
+                if incomes:
+                    for inc in incomes:
+                        print(
+                            f"ID: {inc.id}, Date: {inc.date}, Amount: {inc.amount}, Description: {inc.description}"
+                        )
+                else:
+                    print("No incomes found.")
             elif choice == "0":
                 break
             else:
@@ -143,40 +285,115 @@ class FinanceManager:
             print("7. View Expense Categories")
             print("8. View Income Categories")
             print("0. Back to Main Menu")
-
             choice = input("Enter your choice: ")
             if choice == "1":
-                name = input("Enter category name: ")
-                budget = input("Enter category budget: ")
-                if not budget:
-                    budget = 0
-                self.expense_manager.add_category(name, float(budget))
+                name = input("Enter expense category name: ")
+                budget = float(input("Enter expense category budget: ") or 0)
+
+                try:
+                    cat = self.category_service.create_category(
+                        CategoryCreate(name=name, budget=budget, type="expense")
+                    )
+                    print("Expense category added. ID:", cat.id)
+                except Exception as e:
+                    print("Error adding expense category:", e)
             elif choice == "2":
-                name = input("Enter category name: ")
-                target = input("Enter target amount: ")
-                if not target:
-                    target = 0
-                self.income_manager.add_category(name, target)
+                name = input("Enter income category name: ")
+                target = float(input("Enter income category target: ") or 0)
+
+                try:
+                    cat = self.category_service.create_category(
+                        CategoryCreate(name=name, budget=target, type="income")
+                    )
+                    print("Income category added. ID:", cat.id)
+                except Exception as e:
+                    print("Error adding income category:", e)
             elif choice == "3":
-                category_name = input("Enter the name of the category to edit: ")
-                new_name = input("Enter new category name: ")
-                new_budget = input("Enter new budget: ")
-                self.expense_manager.edit_category(category_name, new_name, new_budget)
+                category_id = input("Enter the ID of the expense category to edit: ")
+                category = self.category_service.get_category_by_id(category_id)
+                if not category or category.type.lower() != "expense":
+                    print("Expense category not found.")
+                    continue
+                new_name = input("Enter new expense category name or leave blank: ")
+                new_budget_str = input("Enter new budget or leave blank: ")
+
+                update_fields = {}
+                if new_name:
+                    update_fields["name"] = new_name
+                if new_budget_str:
+                    update_fields["budget"] = float(new_budget_str)
+                try:
+                    cat = self.category_service.update_category(
+                        category_id, CategoryUpdate(**update_fields)
+                    )
+                    print("Expense category updated. ID:", cat.id)
+                except Exception as e:
+                    print("Error updating expense category:", e)
             elif choice == "4":
-                category_name = input("Enter the name of the category to edit: ")
-                new_name = input("Enter new category name: ")
-                new_target = input("Enter new target amount: ")
-                self.income_manager.edit_category(category_name, new_name, new_target)
+                category_id = input("Enter the ID of the income category to edit: ")
+                category = self.category_service.get_category_by_id(category_id)
+                if not category or category.type.lower() != "income":
+                    print("Income category not found.")
+                    continue
+                new_name = input("Enter new income category name or leave blank: ")
+                new_target_str = input("Enter new target or leave blank: ")
+
+                update_fields = {}
+                if new_name:
+                    update_fields["name"] = new_name
+                if new_target_str:
+                    update_fields["budget"] = float(new_target_str)
+                try:
+                    cat = self.category_service.update_category(
+                        category_id, CategoryUpdate(**update_fields)
+                    )
+                    print("Income category updated. ID:", cat.id)
+                except Exception as e:
+                    print("Error updating income category:", e)
             elif choice == "5":
-                category_name = input("Enter the name of the category to delete: ")
-                self.expense_manager.delete_category(category_name)
+                category_id = input("Enter the ID of the expense category to delete: ")
+                category = self.category_service.get_category_by_id(category_id)
+
+                if not category or category.type.lower() != "expense":
+                    print("Income category not found.")
+                    continue
+                try:
+                    self.category_service.delete_category(category_id)
+                    print("Expense category deleted successfully.")
+                except Exception as e:
+                    print("Error deleting expense category:", e)
             elif choice == "6":
-                category_name = input("Enter the name of the category to delete: ")
-                self.income_manager.delete_category(category_name)
+                category_id = input("Enter the ID of the income category to delete: ")
+                category = self.category_service.get_category_by_id(category_id)
+
+                if not category or category.type.lower() != "income":
+                    print("Income category not found.")
+                    continue
+                try:
+                    self.category_service.delete_category(category_id)
+                    print("Income category deleted successfully.")
+                except Exception as e:
+                    print("Error deleting income category:", e)
             elif choice == "7":
-                self.expense_manager.display_categories()
+                categories = self.category_service.get_all_categories()
+                expense_cats = [
+                    cat for cat in categories if cat.type.lower() == "expense"
+                ]
+                if expense_cats:
+                    for cat in expense_cats:
+                        print(f"ID: {cat.id}, Name: {cat.name}, Budget: {cat.budget}")
+                else:
+                    print("No expense categories found.")
             elif choice == "8":
-                self.income_manager.display_categories()
+                categories = self.category_service.get_all_categories()
+                income_cats = [
+                    cat for cat in categories if cat.type.lower() == "income"
+                ]
+                if income_cats:
+                    for cat in income_cats:
+                        print(f"ID: {cat.id}, Name: {cat.name}, Target: {cat.budget}")
+                else:
+                    print("No income categories found.")
             elif choice == "0":
                 break
             else:
@@ -191,37 +408,70 @@ class FinanceManager:
             print("4. Transfer Between Accounts")
             print("5. View Accounts")
             print("0. Back to Main Menu")
-
             choice = input("Enter your choice: ")
             if choice == "1":
                 name = input("Enter account name: ")
-                balance = input("Enter initial balance: ")
-                if not balance:
-                    balance = 0
-                self.account_manager.add_account(name, float(balance))
+                balance = float(input("Enter initial balance: ") or 0)
+
+                try:
+                    acc = self.account_service.create_account(
+                        AccountCreate(name=name, balance=balance)
+                    )
+                    print("Account created. ID:", acc.id)
+                except Exception as e:
+                    print("Error creating account:", e)
             elif choice == "2":
-                name = input("Enter account name: ")
-                new_name = input("Enter new account name: ")
-                new_balance = input("Enter new balance: ")
-                self.account_manager.edit_account(name, new_name, new_balance)
+                account_id = input("Enter the ID of the account to edit: ")
+                new_name = input("Enter new account name or leave blank: ")
+                new_balance_str = input("Enter new balance or leave blank: ")
+
+                update_fields = {}
+                if new_name:
+                    update_fields["name"] = new_name
+                if new_balance_str:
+                    update_fields["balance"] = float(new_balance_str)
+                try:
+                    acc = self.account_service.update_account(
+                        account_id, AccountUpdate(**update_fields)
+                    )
+                    print("Account updated. ID:", acc.id)
+                except Exception as e:
+                    print("Error updating account:", e)
             elif choice == "3":
-                name = input("Enter account name: ")
-                self.account_manager.delete_account(name)
+                account_id = input("Enter the ID of the account to delete: ")
+                try:
+                    self.account_service.delete_account(account_id)
+                    print("Account deleted successfully.")
+                except Exception as e:
+                    print("Error deleting account:", e)
             elif choice == "4":
-                from_account_name = input("Enter account to transfer from: ")
-
-                to_account_name = input("Enter account to transfer to: ")
-
-                amount = input("Enter amount to transfer: ")
-                if not amount:
-                    amount = 0
-                self.account_manager.transfer_between_accounts(
-                    from_account_name,
-                    to_account_name,
-                    float(amount),
+                from_account_name = input("Enter account name to transfer from: ")
+                to_account_name = input("Enter account name to transfer to: ")
+                amount = float(input("Enter amount to transfer: ") or 0)
+                from_account_id = lookup_account_id(
+                    self.account_service, from_account_name
                 )
+                to_account_id = lookup_account_id(self.account_service, to_account_name)
+                if not from_account_id or not to_account_id:
+                    print("One or both accounts not found.")
+                else:
+                    try:
+                        transfer_data = AccountTransfer(
+                            from_account_id=from_account_id,
+                            to_account_id=to_account_id,
+                            amount=amount,
+                        )
+                        self.account_service.transfer_between_accounts(transfer_data)
+                        print("Transfer completed successfully.")
+                    except Exception as e:
+                        print("Error transferring funds:", e)
             elif choice == "5":
-                self.account_manager.display_accounts()
+                accounts = self.account_service.get_all_accounts()
+                if accounts:
+                    for acc in accounts:
+                        print(f"ID: {acc.id}, Name: {acc.name}, Balance: {acc.balance}")
+                else:
+                    print("No accounts found.")
             elif choice == "0":
                 break
             else:
@@ -237,30 +487,41 @@ class FinanceManager:
             print("5. View Subscriptions")
             print("6. View Subscriptions Transactions")
             print("0. Back to Main Menu")
-
             choice = input("Enter your choice: ")
             if choice == "1":
                 name = input("Enter subscription name: ")
                 amount = float(input("Enter subscription amount: "))
                 frequency = input("Enter frequency (weekly/monthly/yearly): ").lower()
                 if frequency not in ["weekly", "monthly", "yearly"]:
-                    raise ValueError("Invalid frequency")
-                category_name = input("Enter expense category name: ")
+                    print("Invalid frequency")
+                    continue
+                category_name = input("Enter expense category name for subscription: ")
                 account_name = input("Enter account name: ")
                 next_payment_str = input("Enter first payment date (YYYY-MM-DD): ")
-
-                self.subscription_manager.add_subscription(
-                    self.expense_manager,
-                    self.account_manager,
-                    name,
-                    amount,
-                    frequency,
-                    category_name,
-                    account_name,
-                    next_payment_str,
+                acc_id = lookup_account_id(self.account_service, account_name)
+                cat_id = lookup_category_id(
+                    self.category_service, category_name, "expense"
                 )
+                if not acc_id or not cat_id:
+                    print("Account or category not found.")
+                    continue
+                try:
+                    sub = self.subscription_service.create_subscription(
+                        SubscriptionCreate(
+                            name=name,
+                            amount=amount,
+                            frequency=frequency,
+                            next_payment=datetime.strptime(
+                                next_payment_str, "%Y-%m-%d"
+                            ),
+                            category_id=cat_id,
+                            account_id=acc_id,
+                        )
+                    )
+                    print("Subscription created successfully. ID:", sub.id)
+                except Exception as e:
+                    print("Error creating subscription:", e)
             elif choice == "2":
-
                 subscription_id = input("Enter the ID of the subscription to edit: ")
                 new_name = input(
                     "Enter new name or press Enter to keep current: "
@@ -276,7 +537,7 @@ class FinanceManager:
                     .lower()
                 )
                 new_category_name = input(
-                    "Enter new category name or press Enter to keep current: "
+                    "Enter new expense category name or press Enter to keep current: "
                 ).strip()
                 new_account_name = input(
                     "Enter new account name or press Enter to keep current: "
@@ -291,159 +552,120 @@ class FinanceManager:
                     .strip()
                     .lower()
                 )
-                self.subscription_manager.edit_subscription(
-                    subscription_id,
-                    new_name,
-                    new_amount_str,
-                    new_frequency,
-                    new_category_name,
-                    new_account_name,
-                    new_next_payment_str,
-                    new_active_str,
-                )
+
+                update_fields = {}
+                if new_name:
+                    update_fields["name"] = new_name
+                if new_amount_str:
+                    update_fields["amount"] = float(new_amount_str)
+                if new_frequency:
+                    update_fields["frequency"] = new_frequency
+                if new_category_name:
+                    cat_id = lookup_category_id(
+                        self.category_service, new_category_name, "expense"
+                    )
+                    if not cat_id:
+                        print("Expense category not found")
+                        continue
+                    update_fields["category_id"] = cat_id
+                if new_account_name:
+                    acc_id = lookup_account_id(self.account_service, new_account_name)
+                    if not acc_id:
+                        print("Account not found")
+                        continue
+                    update_fields["account_id"] = acc_id
+                if new_next_payment_str:
+                    update_fields["next_payment"] = datetime.strptime(
+                        new_next_payment_str, "%Y-%m-%d"
+                    )
+                if new_active_str:
+                    if new_active_str == "active":
+                        update_fields["active"] = True
+                    elif new_active_str == "inactive":
+                        update_fields["active"] = False
+                    else:
+                        print("Invalid status.")
+                        continue
+                try:
+                    sub = self.subscription_service.update_subscription(
+                        subscription_id, SubscriptionUpdate(**update_fields)
+                    )
+                    print("Subscription updated successfully. ID:", sub.id)
+                except Exception as e:
+                    print("Error updating subscription:", e)
             elif choice == "3":
-                subscription_id = input("Enter the ID of the subscription to delete: ")
-                self.subscription_manager.delete_subscription(subscription_id)
+                subscription_id = input("Enter the ID of the subscription to delete: ").strip()
+                delete_transactions = input("Delete associated transactions? (y/n): ").strip().lower() == "y"
+                try:
+                    self.subscription_service.delete_subscription(
+                        subscription_id,
+                        delete_transactions=delete_transactions
+                    )
+                    print("Subscription deleted successfully.")
+                except Exception as e:
+                    print(f"Error: {e}")
             elif choice == "4":
-                processed = self.subscription_manager.process_due_payments()
+                processed = self.subscription_service.process_due_payments()
                 if processed:
                     print(f"\nProcessed {len(processed)} subscription payments:")
                     for transaction in processed:
-                        print(f"- {transaction}")
+                        print(
+                            f"- Transaction ID: {transaction.id}, Date: {transaction.date}"
+                        )
                 else:
                     print("\nNo subscription payments were due.")
             elif choice == "5":
-                self.subscription_manager.display_subscriptions()
+                subs = self.subscription_service.get_all_subscriptions()
+                if subs:
+                    for sub in subs:
+                        print(
+                            f"ID: {sub.id}, Name: {sub.name}, Amount: {sub.amount}, Frequency: {sub.frequency}, Next Payment: {sub.next_payment}, Active: {sub.active}"
+                        )
+                else:
+                    print("No subscriptions found.")
             elif choice == "6":
                 subscription_id = input(
-                    "Enter the id of the Subscription or Leave Blank for all: "
+                    "Enter the ID of the Subscription or leave blank for all: "
                 )
-                self.subscription_manager.display_subscriptions_transactions(
-                    subscription_id
-                )
+                # For simplicity, here we display all subscriptions transactions
+                if subscription_id:
+                    sub = self.subscription_service.get_subscription(subscription_id)
+                    if sub:
+                        print(f"\nTransactions for subscription {sub.name}:")
+                        transactions = (
+                            self.subscription_service.get_subscription_transactions(
+                                subscription_id
+                            )
+                        )
+                        if transactions:
+                            for tx in transactions:
+                                print(
+                                    f"  - ID: {tx.id}, Date: {tx.date}, Amount: {tx.amount}, Description: {tx.description}"
+                                )
+                        else:
+                            print("  No transactions found.")
+                    else:
+                        print("Subscription not found.")
+                else:
+                    subs = self.subscription_service.get_all_subscriptions()
+                    for sub in subs:
+                        print(f"\nTransactions for subscription {sub.name}:")
+                        transactions = (
+                            self.subscription_service.get_subscription_transactions(
+                                sub.id
+                            )
+                        )
+                        if transactions:
+                            for tx in transactions:
+                                print(
+                                    f"  - ID: {tx.id}, Date: {tx.date}, Amount: {tx.amount}, Description: {tx.description}"
+                                )
+                        else:
+                            print("  No transactions found.")
             elif choice == "0":
                 break
             else:
                 print("Invalid choice. Please try again.")
-
-    # def generate_reports(self):
-    #     while True:
-    #         print("\n----- Generate Reports -----")
-    #         print("1. Monthly Summary")
-    #         print("2. Category-wise Expenses")
-    #         print("3. Category-wise Income")
-    #         print("4. Accounts Balances")
-    #         print("5. Budget vs Actual")
-    #         print("6. Subscription Overview")
-    #         print("0. Back to Main Menu")
-
-    #         choice = input("Enter your choice: ")
-    #         if choice == "1":
-    #             self.monthly_summary()
-    #         elif choice == "2":
-    #             self.category_wise_expenses()
-    #         elif choice == "3":
-    #             self.category_wise_income()
-    #         elif choice == "4":
-    #             self.accounts_balances()
-    #         elif choice == "5":
-    #             self.budget_vs_actual()
-    #         elif choice == "6":
-    #             self.subscription_overview()
-    #         elif choice == "0":
-    #             break
-    #         else:
-    #             print("Invalid choice. Please try again.")
-
-    # def subscription_overview(self):
-    #     """Generate an overview of all active subscriptions and their payment history"""
-    #     print("\n----- Subscription Overview -----")
-    #     subscriptions = self.subscription_manager.get_all_subscriptions()
-
-    #     if not subscriptions:
-    #         print("No subscriptions found.")
-    #         return
-
-    #     total_monthly_cost = 0
-    #     print("\nActive Subscriptions:")
-    #     print("-" * 80)
-
-    #     for subscription in subscriptions:
-    #         if not subscription.active:
-    #             continue
-
-    #         # Calculate monthly cost based on frequency
-    #         monthly_cost = subscription.amount
-    #         if subscription.frequency == "weekly":
-    #             monthly_cost *= 4.33  # Average weeks per month
-    #         elif subscription.frequency == "yearly":
-    #             monthly_cost /= 12
-
-    #         total_monthly_cost += monthly_cost
-
-    #         print(f"{subscription}")
-    #         transactions = subscription.get_transactions()
-    #         if transactions:
-    #             print(f"Last 3 payments:")
-    #             for transaction in transactions[:3]:
-    #                 print(
-    #                     f"  - {transaction.date.strftime('%Y-%m-%d')}: "
-    #                     f"${transaction.amount:.2f}"
-    #                 )
-    #         print("-" * 80)
-
-    #     print(f"\nEstimated Total Monthly Cost: ${total_monthly_cost:.2f}")
-
-    # def settings(self):
-    #     while True:
-    #         print("\n----- Settings -----")
-    #         print("1. Set Default Currency")
-    #         print("2. Set Budget Alerts")
-    #         print("3. Export Data")
-    #         print("4. Import Data")
-    #         print("0. Back to Main Menu")
-
-    #         choice = input("Enter your choice: ")
-    #         if choice == "1":
-    #             self.set_default_currency()
-    #         elif choice == "2":
-    #             self.set_budget_alerts()
-    #         elif choice == "3":
-    #             self.export_data()
-    #         elif choice == "4":
-    #             self.import_data()
-    #         elif choice == "0":
-    #             break
-    #         else:
-    #             print("Invalid choice. Please try again.")
-
-    # def monthly_summary(self):
-    #     print("Generating monthly summary...")
-
-    # def category_wise_expenses(self):
-    #     print("Generating category-wise expense report...")
-
-    # def category_wise_income(self):
-    #     print("Generating category-wise income report...")
-
-    # def account_balances(self):
-    #     print("Generating account balances report...")
-    #     self.account_manager.display_accounts()
-
-    # def budget_vs_actual(self):
-    #     print("Generating budget vs actual report...")
-
-    # def set_default_currency(self):
-    #     print("Setting default currency...")
-
-    # def set_budget_alerts(self):
-    #     print("Setting budget alerts...")
-
-    # def export_data(self):
-    #     print("Exporting data...")
-
-    # def import_data(self):
-    #     print("Importing data...")
 
     def move_transaction(self):
         print("\n----- Move Transaction -----")
@@ -452,9 +674,9 @@ class FinanceManager:
         print("0. Cancel")
         choice = input("Enter your choice: ")
         if choice == "1":
-            self.expense_manager.move_transaction()
+            print("Move Expense functionality is not implemented yet.")
         elif choice == "2":
-            self.income_manager.move_transaction()
+            print("Move Income functionality is not implemented yet.")
         elif choice == "0":
             pass
         else:

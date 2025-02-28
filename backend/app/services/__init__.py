@@ -1,21 +1,17 @@
-#fortuna/backend/app/services/__init__.py
-from .category_service import Category
-from .transaction_service import Transaction
-from .account_service import Account, AccountManager
-from .expense_service import Expense, ExpenseManager
-from .income_service import Income, IncomeManager
-from .subscription_service import Subscription, SubscriptionManager
+# fortuna/backend/app/services/__init__.py
+from .category_service import CategoryService
+from .transaction_service import TransactionService
+from .account_service import AccountService
+from .expense_service import ExpenseService
+from .income_service import IncomeService
+from .subscription_service import SubscriptionService
 
 
 __all__ = [
-    "Category",
-    "Transaction",
-    "Account",
-    "AccountManager",
-    "Expense",
-    "ExpenseManager",
-    "Income",
-    "IncomeManager",
-    "Subscription",
-    "SubscriptionManager",
+    "CategoryService",
+    "TransactionService",
+    "AccountService",
+    "ExpenseService",
+    "IncomeService",
+    "SubscriptionService",
 ]

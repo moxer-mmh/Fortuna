@@ -1,98 +1,54 @@
-#fortuna/backend/app/services/transaction_service.py
+# fortuna/backend/app/services/transaction_service.py
 from datetime import datetime
 from typing import Optional
-import uuid
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+from schemas import (
+    TransactionCreate,
+    TransactionUpdate,
+    Transaction,
+)
 from db import Transaction as TransactionModel
-from db import DatabaseConnection
 
 
-class Transaction:
-    def __init__(
-        self,
-        date: datetime,
-        amount: float,
-        description: str,
-        account_id: str,
-        category_id: str = None,
-        type: str = None,
-        id: str = None,
-        subscription_id: str = None,
-    ):
-        self.id = id or str(uuid.uuid4())
-        self.date = (
-            date if isinstance(date, datetime) else datetime.strptime(date, "%Y-%m-%d")
-        )
-        self.amount = amount
-        self.description = description
-        self.account_id = account_id
-        self.category_id = category_id
-        self.type = type
-        self.subscription_id = subscription_id
-        self._db = DatabaseConnection()
+class TransactionService:
+    def __init__(self, db: Session):
+        self.db = db
 
-    @classmethod
-    def from_orm(cls, db_transaction: TransactionModel) -> "Transaction":
-        """Convert ORM model instance to Transaction domain object"""
-        return cls(
-            date=db_transaction.date,
-            amount=db_transaction.amount,
-            description=db_transaction.description,
-            account_id=db_transaction.account_id,
-            category_id=db_transaction.category_id,
-            type=db_transaction.type,
-            id=db_transaction.id,
-            subscription_id=db_transaction.subscription_id,
+    def create_transaction(self, transaction: TransactionCreate) -> Transaction:
+        db_transaction = TransactionModel(**transaction.model_dump())
+        self.db.add(db_transaction)
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise HTTPException(status_code=400, detail="Error creating transaction")
+        self.db.refresh(db_transaction)
+        return db_transaction
+
+    def get_transaction(self, transaction_id: str) -> Optional[Transaction]:
+        return (
+            self.db.query(TransactionModel)
+            .filter(TransactionModel.id == transaction_id)
+            .first()
         )
 
-    def to_orm(self) -> TransactionModel:
-        """Convert Transaction domain object to ORM model instance"""
-        return TransactionModel(
-            id=self.id,
-            date=self.date,
-            amount=self.amount,
-            description=self.description,
-            account_id=self.account_id,
-            category_id=self.category_id,
-            type=self.type,
-            subscription_id=self.subscription_id,
-        )
+    def update_transaction(
+        self, transaction_id: str, transaction: TransactionUpdate
+    ) -> Optional[Transaction]:
+        db_transaction = self.get_transaction(transaction_id)
+        if not db_transaction:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+        update_data = transaction.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_transaction, key, value)
+        self.db.commit()
+        self.db.refresh(db_transaction)
+        return db_transaction
 
-    def save(self) -> None:
-        with self._db.get_session() as session:
-            db_transaction = (
-                session.query(TransactionModel).filter_by(id=self.id).first()
-            )
-            if db_transaction:
-                db_transaction.date = self.date
-                db_transaction.amount = self.amount
-                db_transaction.description = self.description
-                db_transaction.account_id = self.account_id
-                db_transaction.category_id = self.category_id
-                db_transaction.type = self.type
-                db_transaction.subscription_id = self.subscription_id
-            else:
-                db_transaction = self.to_orm()
-                session.add(db_transaction)
-            session.commit()
-
-    @classmethod
-    def get_by_id(cls, id: str) -> Optional["Transaction"]:
-        db = DatabaseConnection()
-        with db.get_session() as session:
-            db_transaction = session.query(TransactionModel).filter_by(id=id).first()
-            return cls.from_orm(db_transaction) if db_transaction else None
-
-    def delete(self) -> None:
-        with self._db.get_session() as session:
-            db_transaction = (
-                session.query(TransactionModel).filter_by(id=self.id).first()
-            )
-            if db_transaction:
-                session.delete(db_transaction)
-                session.commit()
-
-    def __str__(self) -> str:
-        return f"(id='{self.id}' - date='{self.date.strftime('%Y-%m-%d')}' - amount={self.amount:.2f})"
-
-    def __repr__(self) -> str:
-        return self.__str__()
+    def delete_transaction(self, transaction_id: str) -> None:
+        db_transaction = self.get_transaction(transaction_id)
+        if not db_transaction:
+            raise HTTPException(status_code=404, detail="Transaction not found")
+        self.db.delete(db_transaction)
+        self.db.commit()
