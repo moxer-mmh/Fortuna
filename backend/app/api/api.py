@@ -1,7 +1,8 @@
 # fortuna/backend/app/api/api.py
 from fastapi import APIRouter
-from .v1 import accounts_router
+from .v1 import accounts_router, categories_router
 
 api_router = APIRouter()
 
 api_router.include_router(accounts_router, prefix="/accounts", tags=["accounts"])
+api_router.include_router(categories_router, prefix="/categories", tags=["categories"])
