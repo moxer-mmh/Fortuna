@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from typing import Generator
+import platform
 
 Base = declarative_base()
 
@@ -18,7 +19,12 @@ class DatabaseConnection:
         return cls._instance
 
     def initialize(self):
-        appdata_path = os.path.join(os.getenv("APPDATA"), "finance_manager")
+        system = platform.system()
+        if system == "Windows":
+            appdata_path = os.path.join(os.getenv("APPDATA"), "finance_manager")
+        else:
+            appdata_path = os.path.expanduser("~/.config/finance_manager")
+
         if not os.path.exists(appdata_path):
             os.makedirs(appdata_path)
 
