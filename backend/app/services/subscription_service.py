@@ -3,13 +3,8 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from schemas import (
-    SubscriptionCreate,
-    SubscriptionUpdate,
-    Subscription,
-)
-from schemas import Transaction
-from db import (
+from ..schemas import SubscriptionCreate, SubscriptionUpdate, Subscription, Transaction
+from ..db import (
     Subscription as SubscriptionModel,
     Transaction as TransactionModel,
     Category as CategoryModel,

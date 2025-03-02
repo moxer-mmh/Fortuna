@@ -1,3 +1,11 @@
 scripts/
+scripts/*
 text.txt
 script.py
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/

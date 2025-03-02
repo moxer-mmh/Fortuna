@@ -4,8 +4,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from fastapi import HTTPException
-from schemas import ExpenseCreate, ExpenseUpdate, Expense
-from db import (
+from ..schemas import ExpenseCreate, ExpenseUpdate, Expense
+from ..db import (
     Transaction as TransactionModel,
     Category as CategoryModel,
     Account as AccountModel,

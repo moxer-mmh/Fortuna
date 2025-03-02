@@ -3,12 +3,12 @@ from datetime import datetime
 from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from schemas import (
+from ..schemas import (
     TransactionCreate,
     TransactionUpdate,
     Transaction,
 )
-from db import Transaction as TransactionModel
+from ..db import Transaction as TransactionModel
 
 
 class TransactionService:

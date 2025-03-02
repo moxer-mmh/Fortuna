@@ -3,8 +3,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
-from schemas import Account, AccountCreate, AccountUpdate, AccountTransfer
-from db import Account as AccountModel
+from ..schemas import Account, AccountCreate, AccountUpdate, AccountTransfer
+from ..db import Account as AccountModel
 
 
 class AccountService:

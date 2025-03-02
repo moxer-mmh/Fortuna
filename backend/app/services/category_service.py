@@ -4,8 +4,8 @@ from datetime import datetime
 from sqlalchemy import extract, func
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from schemas import CategoryCreate, CategoryUpdate, Category
-from db import Category as CategoryModel, Transaction as TransactionModel
+from ..schemas import CategoryCreate, CategoryUpdate, Category
+from ..db import Category as CategoryModel, Transaction as TransactionModel
 
 
 class CategoryService:

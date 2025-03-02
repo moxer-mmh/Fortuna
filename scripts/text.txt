@@ -1,7 +1,9 @@
 ├── .dist
+├── .env
 ├── .github
 │   └── workflows
 │       └── ci.yml
+├── .gitignore
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── LICENSE
@@ -12,21 +14,28 @@
 │   ├── Dockerfile
 │   ├── README.md
 │   ├── alembic
+│   │   ├── README
 │   │   ├── env.py
+│   │   ├── script.py.mako
 │   │   └── versions
+│   ├── alembic.ini
 │   ├── app
 │   │   ├── api
+│   │   │   ├── __init__.py
 │   │   │   ├── api.py
 │   │   │   └── v1
 │   │   │       ├── REST
+│   │   │       │   ├── __init__.py
 │   │   │       │   ├── accounts.py
 │   │   │       │   ├── auth.py
 │   │   │       │   ├── categories.py
 │   │   │       │   ├── subscriptions.py
 │   │   │       │   └── transactions.py
+│   │   │       ├── __init__.py
 │   │   │       └── graphql
 │   │   │           └── schema.py
 │   │   ├── core
+│   │   │   ├── __init__.py
 │   │   │   ├── config.py
 │   │   │   ├── exceptions.py
 │   │   │   └── security.py
@@ -43,8 +52,11 @@
 │   │   │   └── session.py
 │   │   ├── main.py
 │   │   ├── schemas
+│   │   │   ├── __init__.py
 │   │   │   ├── account.py
 │   │   │   ├── category.py
+│   │   │   ├── expense.py
+│   │   │   ├── income.py
 │   │   │   ├── subscription.py
 │   │   │   ├── transaction.py
 │   │   │   └── user.py

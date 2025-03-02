@@ -1,8 +1,9 @@
-#fortuna/backend/app/db/session.py
+# fortuna/backend/app/db/session.py
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
+from typing import Generator
 
 Base = declarative_base()
 
@@ -17,7 +18,6 @@ class DatabaseConnection:
         return cls._instance
 
     def initialize(self):
-        # Create the appdata directory if it doesn't exist
         appdata_path = os.path.join(os.getenv("APPDATA"), "finance_manager")
         if not os.path.exists(appdata_path):
             os.makedirs(appdata_path)
@@ -25,7 +25,6 @@ class DatabaseConnection:
         self.db_path = os.path.join(appdata_path, "finance_manager.db")
         self.engine = create_engine(f"sqlite:///{self.db_path}", echo=False)
 
-        # Create session factory
         session_factory = sessionmaker(bind=self.engine)
         self.Session = scoped_session(session_factory)
 
@@ -37,3 +36,12 @@ class DatabaseConnection:
 
     def close_session(self):
         self.Session.remove()
+
+
+def get_db() -> Generator:
+    db_instance = DatabaseConnection()
+    session = db_instance.get_session()
+    try:
+        yield session
+    finally:
+        db_instance.close_session()

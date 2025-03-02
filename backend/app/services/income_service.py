@@ -3,8 +3,8 @@ from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from schemas import IncomeCreate, IncomeUpdate, Income
-from db import (
+from ..schemas import IncomeCreate, IncomeUpdate, Income
+from ..db import (
     Transaction as TransactionModel,
     Category as CategoryModel,
     Account as AccountModel,

@@ -4,5 +4,6 @@ sqlalchemy
 alembic
 pydantic
 python-multipart
+pydantic-settings
 httpx
 typer
