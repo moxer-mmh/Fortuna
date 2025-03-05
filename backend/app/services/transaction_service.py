@@ -1,6 +1,6 @@
 # fortuna/backend/app/services/transaction_service.py
 from datetime import datetime
-from typing import Optional
+from typing import Optional , List
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from ..schemas import (
@@ -32,6 +32,8 @@ class TransactionService:
             .filter(TransactionModel.id == transaction_id)
             .first()
         )
+    def get_all_transactions(self) -> List[Transaction]:
+        return(self.db.query(TransactionModel).all())
 
     def update_transaction(
         self, transaction_id: str, transaction: TransactionUpdate
